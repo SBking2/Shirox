@@ -36,6 +36,19 @@ namespace ev
 			glm::quat yaw_quat = glm::angleAxis(glm::radians(yaw_delta), glm::vec3(0.0f, 1.0f, 0.0f));
 			_camera->rotation = yaw_quat * pitch_quat * _camera->rotation;
 		}
+
+		if (_is_translation_camera)
+		{
+			glm::vec3 right = glm::normalize(glm::rotate(_camera->rotation, glm::vec3(1.0f, 0.0f, 0.0f)));
+			glm::vec3 up = glm::normalize(glm::rotate(_camera->rotation, glm::vec3(0.0f, 1.0f, 0.0f)));
+
+			glm::vec3 move_direct = -_mouse_delta.x * right * translation_sensity * delta;
+			move_direct += _mouse_delta.y * up * translation_sensity * delta;
+
+			_mouse_delta = glm::vec2(0.0f);
+
+			_camera->position += move_direct;
+		}
 	}
 
 	void CameraController::OnKeyEvent(const KeyEvent& e)
@@ -84,10 +97,18 @@ namespace ev
 			switch (e.keycode)
 			{
 			case EV_MOUSE_BUTTON_RIGHT:
-				_is_fly_camera = true;
-				Window::GetInstance()->SetCursorLockMode(true);
+				if (!_is_translation_camera)
+				{
+					_is_fly_camera = true;
+					Window::GetInstance()->SetCursorLockMode(true);
+				}
 				break;
 			case EV_MOUSE_BUTTON_MIDDLE:
+				if (!_is_fly_camera)
+				{
+					_is_translation_camera = true;
+					Window::GetInstance()->SetCursorLockMode(true);
+				}
 				break;
 			}
 		}
@@ -97,10 +118,18 @@ namespace ev
 			switch (e.keycode)
 			{
 			case EV_MOUSE_BUTTON_RIGHT:
-				_is_fly_camera = false;
-				Window::GetInstance()->SetCursorLockMode(false);
+				if (!_is_translation_camera)
+				{
+					_is_fly_camera = false;
+					Window::GetInstance()->SetCursorLockMode(false);
+				}
 				break;
 			case EV_MOUSE_BUTTON_MIDDLE:
+				if (!_is_fly_camera)
+				{
+					_is_translation_camera = false;
+					Window::GetInstance()->SetCursorLockMode(false);
+				}
 				break;
 			}
 		}
@@ -108,6 +137,9 @@ namespace ev
 
 	void CameraController::OnMouseMoveEvent(const MouseMoveEvent& e)
 	{
-		_mouse_delta = glm::vec2(e.x_delta, e.y_delta);
+		if (!_is_fly_camera && !_is_translation_camera)
+			_mouse_delta = glm::vec2(0.0f, 0.0f);
+		else
+			_mouse_delta = glm::vec2(e.x_delta, e.y_delta);
 	}
 }

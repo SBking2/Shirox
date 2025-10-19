@@ -21,6 +21,7 @@ namespace ev
 	public:
 		float move_sensity = 50.0f;
 		float rotation_sensity = 10.0f;
+		float translation_sensity = 10.0f;
 	private:
 		Camera* _camera;
 

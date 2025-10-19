@@ -1768,7 +1768,7 @@ namespace ev
 		float time = std::chrono::duration<float, std::chrono::seconds::period>(current_time - start_time).count();
 
 		UniformBufferObject ubo = {};
-		ubo.model = glm::mat4(1.0f);
+		ubo.model = glm::mat4(1.0f) * glm::scale(glm::mat4(1.0f), glm::vec3(0.1f, 0.1f, 0.1f));
 		ubo.view = _camera.GetViewMatrix();
 		ubo.projection = glm::perspective(
 			glm::radians(45.0f)
