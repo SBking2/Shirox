@@ -1,27 +1,40 @@
 ﻿#include "Application.h"
 #include "Vulkan/VulkanContext.h"
 #include "Window/Window.h"
+#include <functional>
+
 namespace ev
 {
 
-	void Application::init()
+	void Application::Init()
 	{
-		Window::get_instace()->init(800, 600, "vulkan_example");
-		VulkanContext::get_instace()->init(Window::get_instace()->get_window());
+		Window::GetInstance()->Init(800, 600, "vulkan_example");
+		Window::GetInstance()->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
+
+		VulkanContext::GetInstance()->init(Window::GetInstance()->GetWindow());
 	}
 
-	void Application::run()
+	void Application::Run()
 	{
-		while (!Window::get_instace()->should_close())
+		while (!Window::GetInstance()->IsShouldClose())
 		{
-			Window::get_instace()->handle_event();
-			VulkanContext::get_instace()->draw_frame();
+			auto now = std::chrono::high_resolution_clock::now();
+			std::chrono::duration<float> delta = now - _last_time;
+			Window::GetInstance()->HandleEvent();
+			VulkanContext::GetInstance()->OnUpdate(delta.count());
+			VulkanContext::GetInstance()->draw_frame();
+			_last_time = now;
 		}
 	}
 
-	void Application::clear()
+	void Application::Clear()
 	{
-		VulkanContext::get_instace()->clear();
-		Window::get_instace()->clear();
+		VulkanContext::GetInstance()->clear();
+		Window::GetInstance()->Clear();
+	}
+
+	void Application::OnEvent(const Event& e)
+	{
+		VulkanContext::GetInstance()->OnEvent(e);
 	}
 }

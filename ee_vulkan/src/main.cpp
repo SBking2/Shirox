@@ -6,21 +6,21 @@
 int main()
 {
 	ev::Application* app = new ev::Application();
-	app->init();
+	app->Init();
 
 	try
 	{
-		app->run();
+		app->Run();
 	}
 	catch (const std::exception& e)
 	{
 		std::cerr << e.what() << std::endl;
-		app->clear();
+		app->Clear();
 		delete app;
 		return EXIT_FAILURE;
 	}
 
-	app->clear();
+	app->Clear();
 	delete app;
 	return EXIT_SUCCESS;
 }

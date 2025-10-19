@@ -76,13 +76,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;$(ProjectDir)vendor\STB;$(ProjectDir)vendor\TinyObjLoader;$(ProjectDir)vendor\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;$(ProjectDir)vendor\Assimp;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
@@ -93,15 +93,15 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>WIN32;NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;$(ProjectDir)vendor\STB;$(ProjectDir)vendor\TinyObjLoader;$(ProjectDir)vendor\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;$(ProjectDir)vendor\Assimp;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
@@ -110,13 +110,13 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>_DEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;$(ProjectDir)vendor\STB;$(ProjectDir)vendor\TinyObjLoader;$(ProjectDir)vendor\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;$(ProjectDir)vendor\Assimp;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
@@ -127,30 +127,42 @@
       <SDLCheck>true</SDLCheck>
       <PreprocessorDefinitions>NDEBUG;_CONSOLE;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <ConformanceMode>true</ConformanceMode>
-      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>$(ProjectDir)vendor\GLFW\include;$(ProjectDir)vendor\GLM;F:\vulkan\Include;$(ProjectDir)src;$(ProjectDir)vendor\STB;$(ProjectDir)vendor\TinyObjLoader;$(ProjectDir)vendor\Assimp\include;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
       <SubSystem>Console</SubSystem>
       <EnableCOMDATFolding>true</EnableCOMDATFolding>
       <OptimizeReferences>true</OptimizeReferences>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
-      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>F:\vulkan\Lib;$(ProjectDir)vendor\GLFW\bin\Debug-windows-x86_64\GLFW;$(ProjectDir)vendor\Assimp;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <AdditionalDependencies>vulkan-1.lib;GLFW.lib;assimp-vc143-mtd.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
     <ClCompile Include="src\Application\Application.cpp" />
     <ClCompile Include="src\main.cpp" />
+    <ClCompile Include="src\Renderer\Camera\Camera.cpp" />
+    <ClCompile Include="src\Renderer\Camera\CameraController.cpp" />
+    <ClCompile Include="src\Utils\Utils.cpp" />
     <ClCompile Include="src\Vulkan\VulkanContext.cpp" />
     <ClCompile Include="src\Window\Window.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application\Application.h" />
+    <ClInclude Include="src\EVCode\EVMouseButtonCode.h" />
+    <ClInclude Include="src\Event\Event.h" />
+    <ClInclude Include="src\Event\EventDispatcher.h" />
+    <ClInclude Include="src\EVCode\EVKeyCode.h" />
+    <ClInclude Include="src\Renderer\Camera\Camera.h" />
+    <ClInclude Include="src\Renderer\Camera\CameraController.h" />
     <ClInclude Include="src\Singleton\Singleton.h" />
+    <ClInclude Include="src\Utils\Utils.h" />
     <ClInclude Include="src\Vulkan\VulkanContext.h" />
     <ClInclude Include="src\Window\Window.h" />
   </ItemGroup>
   <ItemGroup>
+    <None Include="assets\shaders\triangle.frag" />
+    <None Include="assets\shaders\triangle.vert" />
     <None Include="src\Shader\GLSL\triangle.frag" />
     <None Include="src\Shader\GLSL\triangle.vert" />
   </ItemGroup>

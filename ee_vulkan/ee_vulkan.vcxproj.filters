@@ -27,6 +27,15 @@
     <ClCompile Include="src\Window\Window.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Renderer\Camera\Camera.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Renderer\Camera\CameraController.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Utils\Utils.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application\Application.h">
@@ -41,9 +50,32 @@
     <ClInclude Include="src\Window\Window.h">
       <Filter>头文件</Filter>
     </ClInclude>
+    <ClInclude Include="src\Event\Event.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Event\EventDispatcher.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Renderer\Camera\Camera.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EVCode\EVKeyCode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\EVCode\EVMouseButtonCode.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Renderer\Camera\CameraController.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Utils\Utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <None Include="src\Shader\GLSL\triangle.vert" />
     <None Include="src\Shader\GLSL\triangle.frag" />
+    <None Include="assets\shaders\triangle.vert" />
+    <None Include="assets\shaders\triangle.frag" />
   </ItemGroup>
 </Project>

@@ -1,15 +1,20 @@
 #pragma once
+#include "Event/Event.h"
 #define GLFW_INCLUED_VULKAN
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
+#include <chrono>
 namespace ev
 {
 	class Application
 	{
 	public:
-		void init();
-		void run();
-		void clear();
+		void Init();
+		void Run();
+		void Clear();
+	private:
+		void OnEvent(const Event& e);
+		std::chrono::high_resolution_clock::time_point _last_time;
 	};
 }
