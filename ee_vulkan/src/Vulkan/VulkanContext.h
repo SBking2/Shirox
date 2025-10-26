@@ -4,12 +4,17 @@
 #include "Event/EventDispatcher.h"
 #include "Renderer/Camera/CameraController.h"
 #include "Renderer/Camera/Camera.h"
+#include "Renderer/Mesh/SkinnedMesh.h"
+#include "Instance.h"
 #define GLFW_INCLUED_VULKAN
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <GLM/glm.hpp>
 #include <vector>
 #include <string>
+#include <assimp/Importer.hpp>
+#include <assimp/scene.h>
+#include <assimp/postprocess.h>
 
 namespace ev
 {
@@ -23,11 +28,6 @@ namespace ev
 		void OnEvent(const Event& e);
 		void OnUpdate(float delta);
 	private:
-		void create_instance();
-		void create_debug();
-		void create_surface(GLFWwindow* window);
-		void pick_physical_device();
-		void create_logical_device();	//创建逻辑设备
 		void create_swapchain();
 		void create_img_views();
 		void create_renderpass();
@@ -41,6 +41,7 @@ namespace ev
 		void create_texture_sampler();
 		void load_model();
 		void assimp_load_model();
+		void create_plane();
 		void create_vertex_buffer();
 		void create_descriptor_pool();
 		void create_descriptor_sets();
@@ -73,59 +74,26 @@ namespace ev
 		void tansition_img_layout(VkImage img, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout);
 		inline void wanna_recreate_swapchain() { m_is_wanna_recreate_swapchain = true; }
 		void OnWindowResizeEvent(const WindowResizeEvent& e);
-	private:
+	public:
 		GLFWwindow* m_window;
 		bool m_is_wanna_recreate_swapchain;
-
-		struct PhysicalDevice
-		{
-		public:
-			VkPhysicalDevice device = VK_NULL_HANDLE;
-
-			//显卡具有相应功能的队列簇索引
-			int graphic_queue_index = -1;
-			int present_queue_index = -1;
-
-			//显卡支持的swapchain设置
-			VkSurfaceCapabilitiesKHR capabilities;
-			std::vector<VkSurfaceFormatKHR> formats;
-			std::vector<VkPresentModeKHR> present_modes;
-		};
-
-		struct Vertex
-		{
-			glm::vec3 pos;
-			glm::vec3 color;
-			glm::vec2 tex_coord;
-			glm::ivec4 boneIDs;
-			glm::vec4 weights;
-		};
 
 		struct UniformBufferObject
 		{
 			glm::mat4 model;
 			glm::mat4 view;
 			glm::mat4 projection;
+			glm::mat4 bones[100];
 			//glm::vec4 time;
 		};
+
+		Assimp::Importer _importer;
+		SkinnedMesh _skinned_mesh;
 
 		Camera _camera;
 		CameraController _camera_controller;
 
-		std::vector<Vertex> vertices;
-		std::vector<uint32_t> indices;
-
-		VkInstance m_vk_instace;
-
-		VkDebugUtilsMessengerEXT m_callback;	//存储回调函数信息
-
-		VkSurfaceKHR m_surface;
-
-		PhysicalDevice m_physical_device;
-
-		VkDevice m_logical_device;
-		VkQueue m_graphic_queue;
-		VkQueue m_present_queue;
+		Instance _instance;
 
 		VkSwapchainKHR m_swapchain;
 		VkFormat m_swapchain_format;

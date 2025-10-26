@@ -143,7 +143,10 @@
     <ClCompile Include="src\main.cpp" />
     <ClCompile Include="src\Renderer\Camera\Camera.cpp" />
     <ClCompile Include="src\Renderer\Camera\CameraController.cpp" />
+    <ClCompile Include="src\Renderer\Mesh\SkinnedMesh.cpp" />
     <ClCompile Include="src\Utils\Utils.cpp" />
+    <ClCompile Include="src\Vulkan\Device.cpp" />
+    <ClCompile Include="src\Vulkan\Instance.cpp" />
     <ClCompile Include="src\Vulkan\VulkanContext.cpp" />
     <ClCompile Include="src\Window\Window.cpp" />
   </ItemGroup>
@@ -155,8 +158,11 @@
     <ClInclude Include="src\EVCode\EVKeyCode.h" />
     <ClInclude Include="src\Renderer\Camera\Camera.h" />
     <ClInclude Include="src\Renderer\Camera\CameraController.h" />
+    <ClInclude Include="src\Renderer\Mesh\SkinnedMesh.h" />
     <ClInclude Include="src\Singleton\Singleton.h" />
     <ClInclude Include="src\Utils\Utils.h" />
+    <ClInclude Include="src\Vulkan\Device.h" />
+    <ClInclude Include="src\Vulkan\Instance.h" />
     <ClInclude Include="src\Vulkan\VulkanContext.h" />
     <ClInclude Include="src\Window\Window.h" />
   </ItemGroup>

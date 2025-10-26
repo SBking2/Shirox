@@ -36,6 +36,15 @@
     <ClCompile Include="src\Utils\Utils.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
+    <ClCompile Include="src\Renderer\Mesh\SkinnedMesh.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Instance.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Device.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\Application\Application.h">
@@ -69,6 +78,15 @@
       <Filter>头文件</Filter>
     </ClInclude>
     <ClInclude Include="src\Utils\Utils.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Renderer\Mesh\SkinnedMesh.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Instance.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Device.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
