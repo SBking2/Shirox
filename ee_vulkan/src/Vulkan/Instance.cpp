@@ -36,13 +36,10 @@ namespace ev
 		CreateInstance(required_extensions, validation_layers);
 		CreateDebugCallback();
 		CreateSurface(window);
-		CreateDevice();
 	}
 
 	void Instance::Destroy()
 	{
-		_device.Destroy();
-
 		vkDestroySurfaceKHR(_instance, _surface, nullptr);
 
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
@@ -107,132 +104,4 @@ namespace ev
 		if (glfwCreateWindowSurface(_instance, window, nullptr, &_surface) != VK_SUCCESS)
 			throw std::runtime_error("failed to create surface!");
 	}
-
-	void Instance::CreateDevice()
-	{
-		//获取physical device
-		uint32_t device_count;
-		vkEnumeratePhysicalDevices(_instance, &device_count, nullptr);
-		std::vector<VkPhysicalDevice> devices(device_count);
-		vkEnumeratePhysicalDevices(_instance, &device_count, devices.data());
-
-		std::multimap<int, Device> score_devices_map;
-		for (const VkPhysicalDevice& device : devices)
-		{
-			Device logical_device = {};
-			logical_device.SetPhysicalDevice(device);
-			int score = CheckDevice(device, logical_device);
-			if (score != 0)
-				score_devices_map.insert(std::make_pair(score, logical_device));
-		}
-
-		bool is_find = false;
-		for (auto it = score_devices_map.rbegin(); it != score_devices_map.rend(); it++)
-		{
-			if (it->first > 0)
-			{
-				_device = it->second;
-				is_find = true;
-				break;
-			}
-		}
-
-		if (!is_find)
-			throw std::runtime_error("failed to find physical device!");
-
-		_device.Init();
-	}
-
-	int Instance::CheckDevice(VkPhysicalDevice physical_device, Device& device)
-	{
-		int score = 0;
-
-		//===================================计算分数
-		{
-			VkPhysicalDeviceProperties property;
-			vkGetPhysicalDeviceProperties(physical_device, &property);
-			VkPhysicalDeviceFeatures features;
-			vkGetPhysicalDeviceFeatures(physical_device, &features);
-			if (property.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)	//是否独显
-				score += 1000;
-
-			score += property.limits.maxImageDimension2D;	//image范围越大的显卡分数越高
-			if (!features.geometryShader || !features.samplerAnisotropy)	//查询显卡是否支持几何着色器以及各向异性过滤
-				score = 0;
-
-			if (score == 0) return 0;
-		}
-
-		//===================================检查显卡的队列簇功能
-		{
-			uint32_t queue_family_count;
-			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, nullptr);
-			std::vector<VkQueueFamilyProperties> properties(queue_family_count);
-			vkGetPhysicalDeviceQueueFamilyProperties(physical_device, &queue_family_count, properties.data());
-
-			for (int i = 0; i < properties.size(); i++)
-			{
-				if (device.device_info.graphic_queue_index == -1 && properties[i].queueCount > 0
-					&& properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				{
-					device.device_info.graphic_queue_index = i;		//记录下具有Graphic功能的队列簇
-				}
-
-				if (device.device_info.present_queue_index == -1)
-				{
-					VkBool32 is_present_supported = false;
-					vkGetPhysicalDeviceSurfaceSupportKHR(physical_device, i, _surface, &is_present_supported);
-					if (is_present_supported)
-						device.device_info.present_queue_index = i;
-				}
-
-				if (device.device_info.graphic_queue_index != -1 && device.device_info.present_queue_index != -1)
-					break;
-			}
-
-			if (device.device_info.graphic_queue_index == -1 || device.device_info.present_queue_index == -1)	//没有这两个功能
-				return 0;
-		}
-
-		//===================================检查是否支持swapchian拓展
-		{
-			uint32_t extension_count;
-			vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, nullptr);
-			std::vector<VkExtensionProperties> properties(extension_count);
-			vkEnumerateDeviceExtensionProperties(physical_device, nullptr, &extension_count, properties.data());
-
-			bool is_supported_swapchain = false;
-
-			for (const auto& extension : properties)
-			{
-				if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
-				{
-					is_supported_swapchain = true;
-					break;
-				}
-			}
-
-			if (!is_supported_swapchain) return 0;
-		}
-
-		//===================================检查显卡的swapchain是否与surface是否兼容
-		{
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physical_device, _surface, &device.device_info.capabilities);
-
-			uint32_t format_count;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, _surface, &format_count, nullptr);
-			device.device_info.formats.resize(format_count);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(physical_device, _surface, &format_count, device.device_info.formats.data());
-
-			uint32_t present_mode_count;
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, _surface, &present_mode_count, nullptr);
-			device.device_info.present_modes.resize(present_mode_count);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(physical_device, _surface, &present_mode_count, device.device_info.present_modes.data());
-
-			if (device.device_info.formats.empty() || device.device_info.present_modes.empty())
-				return 0;
-		}
-		return score;
-	}
-	
 }

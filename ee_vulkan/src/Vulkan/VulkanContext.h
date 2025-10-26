@@ -6,6 +6,7 @@
 #include "Renderer/Camera/Camera.h"
 #include "Renderer/Mesh/SkinnedMesh.h"
 #include "Instance.h"
+#include "Device.h"
 #define GLFW_INCLUED_VULKAN
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -94,6 +95,7 @@ namespace ev
 		CameraController _camera_controller;
 
 		Instance _instance;
+		Device _device;
 
 		VkSwapchainKHR m_swapchain;
 		VkFormat m_swapchain_format;
