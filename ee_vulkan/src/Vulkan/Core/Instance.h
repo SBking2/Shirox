@@ -1,5 +1,4 @@
 #pragma once
-#include "Device.h"
 #include<string>
 #include<vector>
 #define GLFW_INCLUED_VULKAN
@@ -10,17 +9,14 @@ namespace ev
 	class Instance final
 	{
 	public:
-		void Init(GLFWwindow* window);
+		void Init();
 		void Destroy();
-		inline VkInstance GetInstance() { return _instance; }
-		inline VkSurfaceKHR GetSurfaceKHR() { return _surface; }
+		inline const VkInstance& GetInstance() const { return _instance; }
 	private:
 		void CreateInstance(const std::vector<const char*>& extensions, const std::vector<const char*>& layers);
 		void CreateDebugCallback();
-		void CreateSurface(GLFWwindow* window);
 	private:
 		VkInstance _instance;
-		VkSurfaceKHR _surface;
 		VkDebugUtilsMessengerEXT _debug_messager;	//存储回调函数信息
 	};
 }

@@ -16,7 +16,7 @@ namespace ev
 		return VK_FALSE;
 	}
 
-	void Instance::Init(GLFWwindow* window)
+	void Instance::Init()
 	{
 		#pragma region 准备好创建VkInstance需要的extension和layer
 		//glfw需要的拓展
@@ -35,13 +35,10 @@ namespace ev
 
 		CreateInstance(required_extensions, validation_layers);
 		CreateDebugCallback();
-		CreateSurface(window);
 	}
 
 	void Instance::Destroy()
 	{
-		vkDestroySurfaceKHR(_instance, _surface, nullptr);
-
 		auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_instance, "vkDestroyDebugUtilsMessengerEXT");
 		if (func != nullptr)
 			func(_instance, _debug_messager, nullptr);
@@ -98,10 +95,5 @@ namespace ev
 
 		if (func == nullptr || func(_instance, &create_info, nullptr, &_debug_messager) != VK_SUCCESS)
 			throw std::runtime_error("failed to set up debug callback!");
-	}
-	void Instance::CreateSurface(GLFWwindow* window)
-	{
-		if (glfwCreateWindowSurface(_instance, window, nullptr, &_surface) != VK_SUCCESS)
-			throw std::runtime_error("failed to create surface!");
 	}
 }

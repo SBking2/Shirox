@@ -1,4 +1,5 @@
 #pragma once
+#include "Surface.h"
 #include <vector>
 #define GLFW_INCLUED_VULKAN
 #include <vulkan/vulkan.h>
@@ -16,15 +17,14 @@ namespace ev
 			std::vector<VkSurfaceFormatKHR> formats;
 			std::vector<VkPresentModeKHR> present_modes;
 		};
-		void Init(const VkInstance& instance, const VkSurfaceKHR& surface);
+		void Init(const Instance& instance, const Surface& surface);
 		void Destroy();
-		inline const VkDevice& GetLogicalDevice() { return _logical_device; }
-		inline const VkPhysicalDevice& GetPhysicalDevice() { return _physical_device; }
-		inline const VkQueue& GetGraphicQueue() { return _graphic_queue; }
-		inline const VkQueue& GetPresentQueue() { return _present_queue; }
-		inline void SetPhysicalDevice(const VkPhysicalDevice& device) { _physical_device = device; }
+		inline const VkDevice& GetLogicalDevice() const { return _logical_device; }
+		inline const VkPhysicalDevice& GetPhysicalDevice() const { return _physical_device; }
+		inline const VkQueue& GetGraphicQueue() const { return _graphic_queue; }
+		inline const VkQueue& GetPresentQueue() const { return _present_queue; }
 	private:
-		void FindBestDevice(const VkInstance& instance, const VkSurfaceKHR& surface);
+		void FindBestDevice(const Instance& instance, const Surface& surface);
 		int CheckDevice(VkPhysicalDevice physical_device, DeviceInfo& device_info, const VkSurfaceKHR& surface);
 		void CreateDevice(const VkPhysicalDevice& physical_device);
 	public:

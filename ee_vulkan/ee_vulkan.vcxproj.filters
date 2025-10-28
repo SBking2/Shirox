@@ -39,10 +39,25 @@
     <ClCompile Include="src\Renderer\Mesh\SkinnedMesh.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\Vulkan\Instance.cpp">
+    <ClCompile Include="src\Vulkan\Core\Instance.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\Vulkan\Device.cpp">
+    <ClCompile Include="src\Vulkan\Core\Device.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\Swapchain.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\Surface.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\RenderPass.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\RenderPipeline.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\ShaderModule.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -83,10 +98,25 @@
     <ClInclude Include="src\Renderer\Mesh\SkinnedMesh.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\Vulkan\Instance.h">
+    <ClInclude Include="src\Vulkan\Core\Instance.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\Vulkan\Device.h">
+    <ClInclude Include="src\Vulkan\Core\Device.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\Swapchain.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\Surface.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\RenderPass.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\RenderPipeline.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\ShaderModule.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>

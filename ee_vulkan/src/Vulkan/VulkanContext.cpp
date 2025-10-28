@@ -1,4 +1,6 @@
 #include "VulkanContext.h"
+#include "Utils/Utils.h"
+#include "RenderObject/ShaderModule.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <GLM/glm.hpp>
@@ -44,12 +46,91 @@ namespace ev
 	{
 		m_window = window;
 
-		_instance.Init(m_window);
-		_device.Init(_instance.GetInstance(), _instance.GetSurfaceKHR());
+		_instance.Init();
+		_surface.Init(m_window, _instance);
+		_device.Init(_instance, _surface);
+		
+		//首先第一件事，就是从物理显卡支持的swapchain设置中，挑出合适的
+		VkExtent2D choose_extent;
+		VkSurfaceFormatKHR choose_format;
+		VkPresentModeKHR choose_present_mode;
 
-		create_swapchain();
-		create_img_views();
-		create_renderpass();
+		//选择format
+		{
+			if (_device.device_info.formats.size() == 1 && _device.device_info.formats[0].format == VK_FORMAT_UNDEFINED)
+			{
+				choose_format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
+			}
+
+			bool is_have_format = false;
+			for (const auto& format : _device.device_info.formats)
+			{
+				if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+				{
+					choose_format = format;
+					is_have_format = true;
+					break;
+				}
+			}
+
+			if (!is_have_format) choose_format = _device.device_info.formats[0];
+		}
+
+		//选择mode
+		{
+			bool is_have_mode = false;
+			for (const auto& mode : _device.device_info.present_modes)
+			{
+				if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
+				{
+					choose_present_mode = mode;
+					is_have_mode = true;
+					break;
+				}
+			}
+			if (!is_have_mode) choose_present_mode = VK_PRESENT_MODE_FIFO_KHR;	//所有设备都支持这个
+		}
+
+		//选择extent
+		{
+			//窗口大小改变后，要重新获取其extent
+			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_device.GetPhysicalDevice(), _surface.GetSurface(), &_device.device_info.capabilities);
+
+			if (_device.device_info.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
+			{
+				choose_extent = _device.device_info.capabilities.currentExtent;
+			}
+			else
+			{
+				int width, height;
+				glfwGetFramebufferSize(m_window, &width, &height);
+
+				choose_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
+				choose_extent.width = std::max(_device.device_info.capabilities.minImageExtent.width
+					, std::min(_device.device_info.capabilities.maxImageExtent.width, choose_extent.width));
+
+				choose_extent.height = std::max(_device.device_info.capabilities.minImageExtent.height
+					, std::min(_device.device_info.capabilities.maxImageExtent.height, choose_extent.height));
+			}
+		}
+
+		uint32_t img_count = _device.device_info.capabilities.minImageCount + 1;
+		if (_device.device_info.capabilities.maxImageCount > 0 &&
+			img_count > _device.device_info.capabilities.maxImageCount)
+			img_count = _device.device_info.capabilities.maxImageCount;
+
+		std::unordered_set<uint32_t> queue_indices_set;
+		queue_indices_set.insert(_device.device_info.graphic_queue_index);
+		queue_indices_set.insert(_device.device_info.present_queue_index);
+
+		std::vector<uint32_t> queue_indedices_vec;
+		for (const auto& it : queue_indices_set)
+			queue_indedices_vec.push_back(it);
+
+		_swapchain.Init(_device, _surface, choose_format, choose_extent
+			, choose_present_mode, queue_indedices_vec, img_count);
+
+		_render_pass.Init(_device, _swapchain);
 
 		create_command_pool();
 		create_depth_resource();
@@ -57,7 +138,7 @@ namespace ev
 		//create_texture();
 		assimp_load_model();
 		create_descriptor_layout();
-		create_graphic_piple();
+		_pipeline.Init(_device, _render_pass, _swapchain, m_descriptor_layout);
 		create_plane();
 		create_texture_view();
 		create_texture_sampler();
@@ -93,11 +174,6 @@ namespace ev
 		vkDestroyDescriptorPool(_device.GetLogicalDevice(), m_descriptor_pool, nullptr);
 		vkDestroyDescriptorSetLayout(_device.GetLogicalDevice(), m_descriptor_layout, nullptr);
 
-		for (auto& view : m_swapchain_imgviews)
-		{
-			vkDestroyImageView(_device.GetLogicalDevice(), view, nullptr);
-		}
-
 		for (auto& framebuffer : m_swapchain_framebuffers)
 		{
 			vkDestroyFramebuffer(_device.GetLogicalDevice(), framebuffer, nullptr);
@@ -106,12 +182,12 @@ namespace ev
 		vkDestroyCommandPool(_device.GetLogicalDevice(), m_command_pool, nullptr);
 
 		//清理Vulkan
-		vkDestroyRenderPass(_device.GetLogicalDevice(), m_renderpass, nullptr);
-		vkDestroyPipelineLayout(_device.GetLogicalDevice(), m_pipeline_layout, nullptr);
-		vkDestroyPipeline(_device.GetLogicalDevice(), m_graphic_pipeline, nullptr);
-		vkDestroySwapchainKHR(_device.GetLogicalDevice(), m_swapchain, nullptr);
+		_render_pass.Destroy(_device);
+		_pipeline.Destroy(_device);
 
+		_swapchain.Destroy(_device);
 		_device.Destroy();
+		_surface.Destroy(_instance);
 		_instance.Destroy();
 	}
 
@@ -138,7 +214,7 @@ namespace ev
 
 		//从交换链获取一张图像
 		uint32_t img_index;
-		auto result = vkAcquireNextImageKHR(_device.GetLogicalDevice(), m_swapchain, std::numeric_limits<uint64_t>::max(),
+		auto result = vkAcquireNextImageKHR(_device.GetLogicalDevice(), _swapchain.GetSwapchain(), std::numeric_limits<uint64_t>::max(),
 			m_img_avaliable_semaphore, VK_NULL_HANDLE, &img_index);
 
 		//当KHR无法使用或者不匹配的时候直接重建交换链，并退出当前的绘制
@@ -184,7 +260,7 @@ namespace ev
 		present_info.waitSemaphoreCount = 1;
 		present_info.pWaitSemaphores = signalSemaphores;
 
-		VkSwapchainKHR swap_chains[] = { m_swapchain };
+		VkSwapchainKHR swap_chains[] = { _swapchain.GetSwapchain()};
 		present_info.swapchainCount = 1;
 		present_info.pSwapchains = swap_chains;
 		present_info.pImageIndices = &img_index;
@@ -221,21 +297,14 @@ namespace ev
 		vkFreeCommandBuffers(_device.GetLogicalDevice(), m_command_pool, static_cast<uint32_t>(m_command_buffers.size())
 			, m_command_buffers.data());
 
-		vkDestroyPipeline(_device.GetLogicalDevice(), m_graphic_pipeline, nullptr);
-		vkDestroyPipelineLayout(_device.GetLogicalDevice(), m_pipeline_layout, nullptr);
-		vkDestroyRenderPass(_device.GetLogicalDevice(), m_renderpass, nullptr);
+		_pipeline.Destroy(_device);
+		_render_pass.Destroy(_device);
 
-		for (size_t i = 0; i < m_swapchain_imgviews.size(); i++)
-		{
-			vkDestroyImageView(_device.GetLogicalDevice(), m_swapchain_imgviews[i], nullptr);
-		}
+		_swapchain.Destroy(_device);
 
-		vkDestroySwapchainKHR(_device.GetLogicalDevice(), m_swapchain, nullptr);
-
-		create_swapchain();
-		create_img_views();
-		create_renderpass();
-		create_graphic_piple();
+		_swapchain.ReCreate(_device, _surface);
+		_render_pass.Init(_device, _swapchain);
+		_pipeline.Init(_device, _render_pass, _swapchain, m_descriptor_layout);
 		create_depth_resource();
 		create_framebuffer();
 		create_command_buffer();
@@ -243,246 +312,6 @@ namespace ev
 	}
 
 	#pragma region step
-
-	//创建交换链和其img
-	void VulkanContext::create_swapchain()
-	{
-		//首先第一件事，就是从物理显卡支持的swapchain设置中，挑出合适的
-		VkExtent2D choose_extent;
-		VkSurfaceFormatKHR choose_format;
-		VkPresentModeKHR choose_present_mode;
-
-		//选择format
-		{
-			if (_device.device_info.formats.size() == 1 && _device.device_info.formats[0].format == VK_FORMAT_UNDEFINED)
-			{
-				choose_format = { VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR };
-			}
-
-			bool is_have_format = false;
-			for (const auto& format : _device.device_info.formats)
-			{
-				if (format.format == VK_FORMAT_B8G8R8A8_UNORM && format.colorSpace == VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
-				{
-					choose_format = format;
-					is_have_format = true;
-					break;
-				}
-			}
-
-			if (!is_have_format) choose_format = _device.device_info.formats[0];
-		}
-
-		//选择mode
-		{
-			bool is_have_mode = false;
-			for (const auto& mode : _device.device_info.present_modes)
-			{
-				if (mode == VK_PRESENT_MODE_MAILBOX_KHR)
-				{
-					choose_present_mode = mode;
-					is_have_mode = true;
-					break;
-				}
-			}
-			if (!is_have_mode) choose_present_mode = VK_PRESENT_MODE_FIFO_KHR;	//所有设备都支持这个
-		}
-
-		//选择extent
-		{
-			//窗口大小改变后，要重新获取其extent
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(_device.GetPhysicalDevice(), _instance.GetSurfaceKHR(), &_device.device_info.capabilities);
-
-			if (_device.device_info.capabilities.currentExtent.width != std::numeric_limits<uint32_t>::max())
-			{
-				choose_extent = _device.device_info.capabilities.currentExtent;
-			}
-			else
-			{
-				int width, height;
-				glfwGetFramebufferSize(m_window, &width, &height);
-
-				choose_extent = { static_cast<uint32_t>(width), static_cast<uint32_t>(height) };
-				choose_extent.width = std::max(_device.device_info.capabilities.minImageExtent.width
-					, std::min(_device.device_info.capabilities.maxImageExtent.width, choose_extent.width));
-
-				choose_extent.height = std::max(_device.device_info.capabilities.minImageExtent.height
-					, std::min(_device.device_info.capabilities.maxImageExtent.height, choose_extent.height));
-			}
-		}
-
-		uint32_t img_count = _device.device_info.capabilities.minImageCount + 1;
-		if (_device.device_info.capabilities.maxImageCount > 0 &&
-			img_count > _device.device_info.capabilities.maxImageCount)
-			img_count = _device.device_info.capabilities.maxImageCount;
-
-		VkSwapchainCreateInfoKHR create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR;
-		create_info.surface = _instance.GetSurfaceKHR();
-		create_info.minImageCount = img_count;
-		create_info.imageFormat = choose_format.format;
-		create_info.imageColorSpace = choose_format.colorSpace;
-		create_info.imageExtent = choose_extent;
-		create_info.imageArrayLayers = 1;
-		create_info.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-
-		uint32_t queueFamilyIndices[] = { _device.device_info.graphic_queue_index, _device.device_info.present_queue_index };
-
-		if (_device.device_info.graphic_queue_index != _device.device_info.present_queue_index)
-		{
-			create_info.imageSharingMode = VK_SHARING_MODE_CONCURRENT;
-			create_info.queueFamilyIndexCount = 2;
-			create_info.pQueueFamilyIndices = queueFamilyIndices;
-		}
-		else
-		{
-			create_info.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-			create_info.queueFamilyIndexCount = 0;
-			create_info.pQueueFamilyIndices = nullptr;
-		}
-		create_info.preTransform = _device.device_info.capabilities.currentTransform;
-		create_info.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR;
-		create_info.presentMode = choose_present_mode;
-		create_info.clipped = VK_TRUE;
-		create_info.oldSwapchain = VK_NULL_HANDLE;
-
-		if (vkCreateSwapchainKHR(_device.GetLogicalDevice(), &create_info, nullptr, &m_swapchain) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create swapchain KHR");
-		}
-
-		//获取交换链中图片句柄
-		uint32_t swap_chain_img_count;
-		vkGetSwapchainImagesKHR(_device.GetLogicalDevice(), m_swapchain, &swap_chain_img_count, nullptr);
-		m_swapchain_imgs.resize(swap_chain_img_count);
-		vkGetSwapchainImagesKHR(_device.GetLogicalDevice(), m_swapchain, &swap_chain_img_count, m_swapchain_imgs.data());
-
-		m_swapchain_format = choose_format.format;
-		m_swapchain_extent = choose_extent;
-	}
-
-	//为交换链的图片创建句柄
-	void VulkanContext::create_img_views()
-	{
-		m_swapchain_imgviews.resize(m_swapchain_imgs.size());
-		for (int i = 0; i < m_swapchain_imgs.size(); i++)
-		{
-			VkImageViewCreateInfo create_info = {};
-			create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-			create_info.image = m_swapchain_imgs[i];
-			create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-			create_info.format = m_swapchain_format;
-
-			create_info.components.r = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.g = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.b = VK_COMPONENT_SWIZZLE_IDENTITY;
-			create_info.components.a = VK_COMPONENT_SWIZZLE_IDENTITY;
-
-			create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-			create_info.subresourceRange.baseMipLevel = 0;
-			create_info.subresourceRange.levelCount = 1;
-			create_info.subresourceRange.baseArrayLayer = 0;
-			create_info.subresourceRange.layerCount = 1;
-
-			if (vkCreateImageView(_device.GetLogicalDevice(), &create_info, nullptr, &m_swapchain_imgviews[i])
-				!= VK_SUCCESS)
-			{
-				throw std::runtime_error("failed to create image view!");
-			}
-		}
-	}
-
-	VkFormat VulkanContext::findSupportedFormat(
-		const std::vector<VkFormat>& candidates,
-		VkImageTiling tiling,
-		VkFormatFeatureFlags features)
-	{
-		for (VkFormat format : candidates) {
-			VkFormatProperties props;
-			vkGetPhysicalDeviceFormatProperties(_device.GetPhysicalDevice(), format, &props);
-
-			if (tiling == VK_IMAGE_TILING_LINEAR &&
-				(props.linearTilingFeatures & features) == features)
-			{
-				return format;
-			}
-			else if (tiling == VK_IMAGE_TILING_OPTIMAL &&
-				(props.optimalTilingFeatures & features) == features)
-			{
-				return format;
-			}
-		}
-
-		throw std::runtime_error("failed to find supported format!");
-	}
-
-
-	void VulkanContext::create_renderpass()
-	{
-		VkAttachmentDescription color_attachment = {};
-		color_attachment.format = m_swapchain_format;
-		color_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		color_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;	//每次渲染前一帧清楚帧缓冲
-		color_attachment.storeOp = VK_ATTACHMENT_STORE_OP_STORE;	//渲染的内容会被存储起来
-
-		//对模板缓冲不关心（暂时）
-		color_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		color_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-
-		color_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;		//表示不关心渲染前的图像布局
-		color_attachment.finalLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;		//图像被用作在交换链中呈现
-
-		VkAttachmentReference color_attachment_ref = {};
-		color_attachment_ref.attachment = 0;	//attachment description的索引
-		color_attachment_ref.layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentDescription depth_attachment = {};
-		depth_attachment.format = findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
-		depth_attachment.samples = VK_SAMPLE_COUNT_1_BIT;
-		depth_attachment.loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
-		depth_attachment.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.stencilLoadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
-		depth_attachment.stencilStoreOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-		depth_attachment.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-		depth_attachment.finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkAttachmentReference depth_attachment_ref = {};
-		depth_attachment_ref.attachment = 1;
-		depth_attachment_ref.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-
-		VkSubpassDescription subpass = {};
-		subpass.pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
-		subpass.colorAttachmentCount = 1;
-		subpass.pColorAttachments = &color_attachment_ref;
-		subpass.pDepthStencilAttachment = &depth_attachment_ref;
-
-		std::array<VkAttachmentDescription, 2> attachments = {
-			color_attachment, depth_attachment
-		};
-
-		//配置子流程依赖
-		VkSubpassDependency dependency = {};
-		dependency.srcSubpass = VK_SUBPASS_EXTERNAL;
-		dependency.dstSubpass = 0;
-		dependency.srcStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;	//等待颜色附着输出的阶段
-		dependency.srcAccessMask = 0;
-		dependency.dstStageMask = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-		dependency.dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-
-		VkRenderPassCreateInfo renderpass_create_info = {};
-		renderpass_create_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO;
-		renderpass_create_info.attachmentCount = static_cast<uint32_t>(attachments.size());
-		renderpass_create_info.pAttachments = attachments.data();
-		renderpass_create_info.subpassCount = 1;
-		renderpass_create_info.pSubpasses = &subpass;
-		renderpass_create_info.dependencyCount = 1;
-		renderpass_create_info.pDependencies = &dependency;
-
-		if (vkCreateRenderPass(_device.GetLogicalDevice(), &renderpass_create_info, nullptr, &m_renderpass) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create render pass!");
-		}
-	}
 
 	void VulkanContext::create_descriptor_layout()
 	{
@@ -516,231 +345,24 @@ namespace ev
 		}
 	}
 
-	void VulkanContext::create_graphic_piple()
-	{
-		//准备Shader Module
-		std::vector<char> vert_source;
-		std::vector<char> frag_source;
-
-		read_shader("assets/shaders/vert.spv", vert_source);
-		read_shader("assets/shaders/frag.spv", frag_source);
-
-		VkShaderModule vertex_shader_module = create_shader_module(vert_source);
-		VkShaderModule frag_shader_module = create_shader_module(frag_source);
-
-		//指定shader在哪个着色器阶段使用
-		VkPipelineShaderStageCreateInfo vert_shader_stage_create_info = {};
-		vert_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		vert_shader_stage_create_info.stage = VK_SHADER_STAGE_VERTEX_BIT;
-		vert_shader_stage_create_info.module = vertex_shader_module;
-		vert_shader_stage_create_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo frag_shader_stage_create_info = {};
-		frag_shader_stage_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-		frag_shader_stage_create_info.stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-		frag_shader_stage_create_info.module = frag_shader_module;
-		frag_shader_stage_create_info.pName = "main";
-
-		VkPipelineShaderStageCreateInfo shaderStages[] =
-		{
-			vert_shader_stage_create_info,
-			frag_shader_stage_create_info
-		};
-
-		//顶点绑定描述
-		VkVertexInputBindingDescription bind_descriptions = {};
-		bind_descriptions.binding = 0;
-		bind_descriptions.stride = sizeof(SkinnedMesh::Vertex);
-		bind_descriptions.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
-
-		//顶点属性描述
-		std::array<VkVertexInputAttributeDescription, 5> attribute_descriptions{};
-		attribute_descriptions[0].binding = 0;
-		attribute_descriptions[0].location = 0;
-		attribute_descriptions[0].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribute_descriptions[0].offset = 0;
-
-		attribute_descriptions[1].binding = 0;
-		attribute_descriptions[1].location = 1;
-		attribute_descriptions[1].format = VK_FORMAT_R32G32B32_SFLOAT;
-		attribute_descriptions[1].offset = offsetof(SkinnedMesh::Vertex, color);
-
-		attribute_descriptions[2].binding = 0;
-		attribute_descriptions[2].location = 2;
-		attribute_descriptions[2].format = VK_FORMAT_R32G32_SFLOAT;
-		attribute_descriptions[2].offset = offsetof(SkinnedMesh::Vertex, tex_coord);
-
-		attribute_descriptions[3].binding = 0;
-		attribute_descriptions[3].location = 3;
-		attribute_descriptions[3].format = VK_FORMAT_R32G32B32A32_SINT;
-		attribute_descriptions[3].offset = offsetof(SkinnedMesh::Vertex, bone_ids);
-
-		attribute_descriptions[4].binding = 0;
-		attribute_descriptions[4].location = 4;
-		attribute_descriptions[4].format = VK_FORMAT_R32G32B32A32_SFLOAT;
-		attribute_descriptions[4].offset = offsetof(SkinnedMesh::Vertex, weights);
-
-		//1.顶点输入
-		//指定传给顶点着色器地顶点数据的格式
-		VkPipelineVertexInputStateCreateInfo vertex_input_state_create_info = {};
-		vertex_input_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
-		vertex_input_state_create_info.vertexBindingDescriptionCount = 1;
-		vertex_input_state_create_info.pVertexBindingDescriptions = &bind_descriptions;
-		vertex_input_state_create_info.vertexAttributeDescriptionCount = static_cast<uint32_t>(attribute_descriptions.size());
-		vertex_input_state_create_info.pVertexAttributeDescriptions = attribute_descriptions.data();
-
-		//2.输入装配
-		//定义了哪几种类型的图元
-		//是否启用几何图元重启
-		VkPipelineInputAssemblyStateCreateInfo assembly_create_info = {};
-		assembly_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
-		assembly_create_info.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-		assembly_create_info.primitiveRestartEnable = VK_FALSE;
-
-		//3.视口和裁剪
-
-		//设置视口
-		VkViewport viewport = {};
-		viewport.x = 0.0f;
-		viewport.y = 0.0f;
-		viewport.width = (float)m_swapchain_extent.width;
-		viewport.height = (float)m_swapchain_extent.height;
-		viewport.minDepth = 0.0f;
-		viewport.maxDepth = 1.0f;
-
-		//设置裁剪
-		VkRect2D scissor = {};
-		scissor.offset = { 0, 0 };
-		scissor.extent = m_swapchain_extent;
-
-		VkPipelineViewportStateCreateInfo viewport_state_create_info = {};
-		viewport_state_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO;
-		viewport_state_create_info.viewportCount = 1;
-		viewport_state_create_info.pViewports = &viewport;
-		viewport_state_create_info.scissorCount = 1;
-		viewport_state_create_info.pScissors = &scissor;
-
-		//4.光栅化
-		VkPipelineRasterizationStateCreateInfo rasterization_create_info = {};
-		rasterization_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO;
-		rasterization_create_info.depthClampEnable = VK_FALSE;		//表明丢弃远近平面外的东西，并不截断为远近平面
-		rasterization_create_info.rasterizerDiscardEnable = VK_FALSE;		//如果是True，则禁止一切片段输出到帧缓冲
-		rasterization_create_info.lineWidth = 1.0f;		//如果是True，则禁止一切片段输出到帧缓冲
-		rasterization_create_info.cullMode = VK_CULL_MODE_BACK_BIT;		//背面剔除
-		rasterization_create_info.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;		//指定顺时针的顶点顺序为正面
-
-		rasterization_create_info.depthBiasEnable = VK_FALSE;	//是否将片段所处线段的斜率？放到深度值上？
-		rasterization_create_info.depthBiasConstantFactor = 0.0f;
-		rasterization_create_info.depthBiasClamp = 0.0f;
-		rasterization_create_info.depthBiasSlopeFactor = 0.0f;
-
-		//5.多重采样
-		VkPipelineMultisampleStateCreateInfo multi_sample_create_info = {};
-		multi_sample_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO;
-		multi_sample_create_info.sampleShadingEnable = VK_TRUE;	//禁用多重采样
-		multi_sample_create_info.minSampleShading = 0.2f;
-		multi_sample_create_info.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;	//采样一次？
-
-		//6.深度和模板测试
-		VkPipelineDepthStencilStateCreateInfo depthStencil{};
-		depthStencil.sType = VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO;
-		depthStencil.depthTestEnable = VK_TRUE;
-		depthStencil.depthWriteEnable = VK_TRUE;
-		depthStencil.depthCompareOp = VK_COMPARE_OP_LESS;
-		depthStencil.depthBoundsTestEnable = VK_FALSE;
-		depthStencil.stencilTestEnable = VK_FALSE;
-
-		//7.颜色混合
-		VkPipelineColorBlendAttachmentState color_blend_attachment = {};
-		color_blend_attachment.colorWriteMask = VK_COLOR_COMPONENT_R_BIT
-			| VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-			VK_COLOR_COMPONENT_A_BIT;
-		color_blend_attachment.blendEnable = VK_FALSE;		//暂时禁用颜色混合
-
-		VkPipelineColorBlendStateCreateInfo color_blend_create_info = {};
-		color_blend_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO;
-		color_blend_create_info.logicOpEnable = VK_FALSE;
-		color_blend_create_info.logicOp = VK_LOGIC_OP_COPY;
-		color_blend_create_info.attachmentCount = 1;
-		color_blend_create_info.pAttachments = &color_blend_attachment;
-
-		//8.动态状态
-		VkDynamicState dynamicStates[] = {
-			VK_DYNAMIC_STATE_VIEWPORT,		//视口变换
-			VK_DYNAMIC_STATE_LINE_WIDTH		//线宽
-		};
-
-		VkPipelineDynamicStateCreateInfo dynamic_create_info = {};
-		dynamic_create_info.sType = VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO;
-		dynamic_create_info.dynamicStateCount = 0;	//sizeof(dynamicStates) / sizeof(VkDynamicState);	//暂时不开启
-		dynamic_create_info.pDynamicStates = dynamicStates;
-
-		//9.管线布局(uniform)
-		VkPipelineLayoutCreateInfo pipeline_layout_create_info = {};
-		pipeline_layout_create_info.sType =
-			VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO;
-		pipeline_layout_create_info.setLayoutCount = 1; 
-		pipeline_layout_create_info.pSetLayouts = &m_descriptor_layout;
-		pipeline_layout_create_info.pushConstantRangeCount = 0; // Optional
-		pipeline_layout_create_info.pPushConstantRanges = nullptr; // Optional
-
-		if (vkCreatePipelineLayout(_device.GetLogicalDevice(), &pipeline_layout_create_info, nullptr,
-			&m_pipeline_layout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create pipeline layout!");
-		}
-
-		//创建渲染管线
-		VkGraphicsPipelineCreateInfo pipeline_create_info = {};
-		pipeline_create_info.sType = VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO;
-		pipeline_create_info.stageCount = 2;	//两个着色器阶段
-		pipeline_create_info.pStages = shaderStages;
-
-		pipeline_create_info.pVertexInputState = &vertex_input_state_create_info;
-		pipeline_create_info.pInputAssemblyState = &assembly_create_info;
-		pipeline_create_info.pViewportState = &viewport_state_create_info;
-		pipeline_create_info.pRasterizationState = &rasterization_create_info;
-		pipeline_create_info.pMultisampleState = &multi_sample_create_info;
-		pipeline_create_info.pDepthStencilState = &depthStencil;
-		pipeline_create_info.pColorBlendState = &color_blend_create_info;
-		pipeline_create_info.pDynamicState = &dynamic_create_info;
-
-		pipeline_create_info.layout = m_pipeline_layout;
-		pipeline_create_info.renderPass = m_renderpass;
-		pipeline_create_info.subpass = 0;	//子流程的索引
-
-		pipeline_create_info.basePipelineHandle = VK_NULL_HANDLE; // Optional
-		pipeline_create_info.basePipelineIndex = -1; // Optional
-
-		if (vkCreateGraphicsPipelines(_device.GetLogicalDevice(), VK_NULL_HANDLE, 1, &pipeline_create_info
-			, nullptr, &m_graphic_pipeline) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create graphic pipeline!");
-		}
-
-		//创建了管线之后可以销毁shader module了
-		vkDestroyShaderModule(_device.GetLogicalDevice(), vertex_shader_module, nullptr);
-		vkDestroyShaderModule(_device.GetLogicalDevice(), frag_shader_module, nullptr);
-	}
-
 	//为交换链的图片创建帧缓冲
 	void VulkanContext::create_framebuffer()
 	{
-		m_swapchain_framebuffers.resize(m_swapchain_imgviews.size());
-		for (int i = 0; i < m_swapchain_imgviews.size(); i++)
+		m_swapchain_framebuffers.resize(_swapchain.GetImgCount());
+		for (int i = 0; i < _swapchain.GetImgCount(); i++)
 		{
 			std::array<VkImageView, 2> attachments = {
-				m_swapchain_imgviews[i],
+				_swapchain.GetImgView()[i],
 				m_depth_img_view
 			};
 
 			VkFramebufferCreateInfo framebuffer_create_info = {};
 			framebuffer_create_info.sType = VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO;
-			framebuffer_create_info.renderPass = m_renderpass;
+			framebuffer_create_info.renderPass = _render_pass.GetRenderPass();
 			framebuffer_create_info.attachmentCount = static_cast<uint32_t>(attachments.size());
 			framebuffer_create_info.pAttachments = attachments.data();
-			framebuffer_create_info.width = m_swapchain_extent.width;
-			framebuffer_create_info.height = m_swapchain_extent.height;
+			framebuffer_create_info.width = _swapchain.swapchain_info.extent.width;
+			framebuffer_create_info.height = _swapchain.swapchain_info.extent.height;
 			framebuffer_create_info.layers = 1;
 
 			if (vkCreateFramebuffer(_device.GetLogicalDevice(), &framebuffer_create_info, nullptr, &m_swapchain_framebuffers[i])
@@ -768,9 +390,12 @@ namespace ev
 
 	void VulkanContext::create_depth_resource()
 	{
-		VkFormat depth_format = findSupportedFormat({ VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }, VK_IMAGE_TILING_OPTIMAL, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
+		VkFormat depth_format = Utils::FindSupportedFormat(_device
+			, { VK_FORMAT_D32_SFLOAT, VK_FORMAT_D32_SFLOAT_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT }
+			, VK_IMAGE_TILING_OPTIMAL
+			, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-		create_image(m_swapchain_extent.width, m_swapchain_extent.height, depth_format
+		create_image(_swapchain.swapchain_info.extent.width, _swapchain.swapchain_info.extent.height, depth_format
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
 			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
@@ -997,7 +622,7 @@ namespace ev
 	void VulkanContext::assimp_load_model()
 	{
 		const aiScene* scene = _importer.ReadFile(
-			"assets/models/racer/Robot Hip Hop Dance.fbx"
+			"assets/models/racer/Flair.fbx"
 			, aiProcess_Triangulate | aiProcess_LimitBoneWeights
 			| aiProcess_JoinIdenticalVertices | aiProcess_GenSmoothNormals
 			| aiProcess_CalcTangentSpace
@@ -1158,10 +783,10 @@ namespace ev
 
 			VkRenderPassBeginInfo renderpass_info = {};
 			renderpass_info.sType = VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO;
-			renderpass_info.renderPass = m_renderpass;
+			renderpass_info.renderPass = _render_pass.GetRenderPass();
 			renderpass_info.framebuffer = m_swapchain_framebuffers[i];
 			renderpass_info.renderArea.offset = { 0, 0 };
-			renderpass_info.renderArea.extent = m_swapchain_extent;
+			renderpass_info.renderArea.extent = _swapchain.swapchain_info.extent;
 
 			std::array<VkClearValue, 2> clear_values = {};
 			clear_values[0].color = {0.1f, 0.1f, 0.1f, 1.0f};
@@ -1173,12 +798,12 @@ namespace ev
 			vkCmdBeginRenderPass(m_command_buffers[i], &renderpass_info, VK_SUBPASS_CONTENTS_INLINE);
 
 			//绑定渲染管线
-			vkCmdBindPipeline(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphic_pipeline);
+			vkCmdBindPipeline(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.GetPipeline());
 
 			VkBuffer vertex_buffers[] = { m_vertex_buffer };
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(m_command_buffers[i], 0, 1, vertex_buffers, offsets);
-			vkCmdBindDescriptorSets(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, m_pipeline_layout
+			vkCmdBindDescriptorSets(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.GetPipelineLayout()
 				, 0, 1, &m_descriptor_set, 0, nullptr);
 			vkCmdBindIndexBuffer(m_command_buffers[i], m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
 
@@ -1230,122 +855,6 @@ namespace ev
 			if ((filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
 				return i;
 		}
-	}
-
-	/// <summary>
-	/// 检查物理显卡是否合格
-	/// </summary>
-	bool VulkanContext::check_device(VkPhysicalDevice device, int* score
-		, int* graphic_queue_index, int* present_queue_index
-		, VkSurfaceCapabilitiesKHR& capabilities
-		, std::vector<VkSurfaceFormatKHR>& formats, std::vector<VkPresentModeKHR>& modes
-	)
-	{
-#pragma region 计算显卡的分数
-
-		{
-			//获取Property
-			VkPhysicalDeviceProperties property;
-			vkGetPhysicalDeviceProperties(device, &property);
-
-			VkPhysicalDeviceFeatures feature;
-			vkGetPhysicalDeviceFeatures(device, &feature);
-
-			//计算当前显卡的分数
-			*score = 0;
-			if (property.deviceType == VK_PHYSICAL_DEVICE_TYPE_DISCRETE_GPU)
-				*score += 1000;
-			*score += property.limits.maxImageDimension2D;
-			if (!feature.geometryShader || !feature.samplerAnisotropy)
-				*score = 0;
-
-			if (*score == 0)
-				return false;
-		}
-
-#pragma endregion
-
-#pragma region 检查队列簇是否有图像和显示功能
-
-		{
-			//还要求物理显卡有Graphic的功能
-			uint32_t queue_family_count;
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, nullptr);
-			std::vector<VkQueueFamilyProperties> properties(queue_family_count);
-			vkGetPhysicalDeviceQueueFamilyProperties(device, &queue_family_count, properties.data());
-
-			for (int i = 0; i < properties.size(); i++)
-			{
-				if (*graphic_queue_index == -1 && properties[i].queueCount > 0
-					&& properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT)
-				{
-					*graphic_queue_index = i;		//记录下具有Graphic功能的队列簇
-				}
-
-				if (*present_queue_index == -1)
-				{
-					VkBool32 is_present_supported = false;
-					vkGetPhysicalDeviceSurfaceSupportKHR(device, i, _instance.GetSurfaceKHR(), &is_present_supported);
-					if (is_present_supported)
-						*present_queue_index = i;
-				}
-
-				if (*graphic_queue_index != -1 && *present_queue_index != -1)
-					break;
-			}
-
-			if (*graphic_queue_index == -1 || *present_queue_index == -1)
-				return false;
-		}
-
-#pragma endregion
-
-#pragma region 检查是否支持SwapChain拓展
-
-		{
-			uint32_t extension_count;
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, nullptr);
-			std::vector<VkExtensionProperties> properties(extension_count);
-			vkEnumerateDeviceExtensionProperties(device, nullptr, &extension_count, properties.data());
-
-			bool is_supported_swapchain = false;
-
-			for (const auto& extension : properties)
-			{
-				if (strcmp(extension.extensionName, VK_KHR_SWAPCHAIN_EXTENSION_NAME) == 0)
-				{
-					is_supported_swapchain = true;
-					break;
-				}
-			}
-
-			if (!is_supported_swapchain) return false;
-		}
-
-#pragma endregion
-
-#pragma region 检查显卡的Swapchain是否与Surface兼容
-
-		{
-			vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, _instance.GetSurfaceKHR(), &capabilities);
-
-			uint32_t format_count;
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _instance.GetSurfaceKHR(), &format_count, nullptr);
-			formats.resize(format_count);
-			vkGetPhysicalDeviceSurfaceFormatsKHR(device, _instance.GetSurfaceKHR(), &format_count, formats.data());
-
-			uint32_t present_mode_count;
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _instance.GetSurfaceKHR(), &present_mode_count, nullptr);
-			modes.resize(present_mode_count);
-			vkGetPhysicalDeviceSurfacePresentModesKHR(device, _instance.GetSurfaceKHR(), &present_mode_count, modes.data());
-
-			if (formats.empty() || modes.empty())
-				return false;
-		}
-
-#pragma endregion
-
-		return true;
 	}
 
 	void VulkanContext::OnUpdate(float delta)
@@ -1426,40 +935,6 @@ namespace ev
 		vkBindImageMemory(_device.GetLogicalDevice(), image, memory, 0);
 	}
 
-	void VulkanContext::read_shader(const std::string& path, std::vector<char>& source)
-	{
-		std::ifstream file(path, std::ios::ate | std::ios::binary);		//ate模式是开始时处于文件尾部
-		if (!file.is_open())
-		{
-			throw std::runtime_error("failed to read file : " + path);
-		}
-
-		size_t file_size = (size_t)file.tellg();
-		source.resize(file_size);
-
-		//将文件指针指到开头
-		file.seekg(0);
-		file.read(source.data(), file_size);
-
-		file.close();
-	}
-
-	VkShaderModule VulkanContext::create_shader_module(const std::vector<char>& source)
-	{
-		VkShaderModule shader_module;
-		VkShaderModuleCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
-		create_info.codeSize = source.size();
-		create_info.pCode = reinterpret_cast<const uint32_t*>(source.data());
-
-		if (vkCreateShaderModule(_device.GetLogicalDevice(), &create_info, nullptr, &shader_module) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create shader module!");
-		}
-
-		return shader_module;
-	}
-
 	void VulkanContext::OnWindowResizeEvent(const WindowResizeEvent& e)
 	{
 		wanna_recreate_swapchain();
@@ -1512,7 +987,7 @@ namespace ev
 		ubo.view = _camera.GetViewMatrix();
 		ubo.projection = glm::perspective(
 			glm::radians(45.0f)
-			, m_swapchain_extent.width / (float) m_swapchain_extent.height
+			, _swapchain.swapchain_info.extent.width / (float)_swapchain.swapchain_info.extent.height
 		, 0.1f, 1000.0f);
 
 		//ubo.time.x = time;

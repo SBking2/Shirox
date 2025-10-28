@@ -4,7 +4,7 @@
 #include<stdexcept>
 namespace ev
 {
-	void Device::Init(const VkInstance& instance, const VkSurfaceKHR& surface)
+	void Device::Init(const Instance& instance, const Surface& surface)
 	{
 		FindBestDevice(instance, surface);
 		CreateDevice(_physical_device);
@@ -13,19 +13,19 @@ namespace ev
 	{
 		vkDestroyDevice(_logical_device, nullptr);
 	}
-	void Device::FindBestDevice(const VkInstance& instance, const VkSurfaceKHR& surface)
+	void Device::FindBestDevice(const Instance& instance, const Surface& surface)
 	{
 		//ªÒ»°physical device
 		uint32_t device_count;
-		vkEnumeratePhysicalDevices(instance, &device_count, nullptr);
+		vkEnumeratePhysicalDevices(instance.GetInstance(), &device_count, nullptr);
 		std::vector<VkPhysicalDevice> devices(device_count);
-		vkEnumeratePhysicalDevices(instance, &device_count, devices.data());
+		vkEnumeratePhysicalDevices(instance.GetInstance(), &device_count, devices.data());
 
 		std::multimap<int, std::pair<DeviceInfo, VkPhysicalDevice>> score_devices_map;
 		for (const VkPhysicalDevice& device : devices)
 		{
 			DeviceInfo info;
-			int score = CheckDevice(device, info, surface);
+			int score = CheckDevice(device, info, surface.GetSurface());
 			if (score != 0)
 				score_devices_map.insert(std::make_pair(score, std::make_pair(info, device)));
 		}
