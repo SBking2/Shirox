@@ -13,6 +13,18 @@ namespace ev
 	{
 		vkDestroyDevice(_logical_device, nullptr);
 	}
+
+	uint32_t Device::FindMemoryType(uint32_t filter, VkMemoryPropertyFlags properties) const
+	{
+		VkPhysicalDeviceMemoryProperties mem_properties;
+		vkGetPhysicalDeviceMemoryProperties(_physical_device, &mem_properties);
+		for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
+		{
+			if ((filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
+				return i;
+		}
+	}
+
 	void Device::FindBestDevice(const Instance& instance, const Surface& surface)
 	{
 		//»ñÈ¡physical device

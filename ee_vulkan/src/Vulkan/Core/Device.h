@@ -19,6 +19,7 @@ namespace ev
 		};
 		void Init(const Instance& instance, const Surface& surface);
 		void Destroy();
+		uint32_t FindMemoryType(uint32_t filter, VkMemoryPropertyFlags properties) const;
 		inline const VkDevice& GetLogicalDevice() const { return _logical_device; }
 		inline const VkPhysicalDevice& GetPhysicalDevice() const { return _physical_device; }
 		inline const VkQueue& GetGraphicQueue() const { return _graphic_queue; }

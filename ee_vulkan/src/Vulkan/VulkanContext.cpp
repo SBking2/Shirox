@@ -1,6 +1,6 @@
 #include "VulkanContext.h"
 #include "Utils/Utils.h"
-#include "RenderObject/ShaderModule.h"
+#include "RenderObject/Shader/ShaderModule.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
 #include <GLM/glm.hpp>
@@ -132,18 +132,16 @@ namespace ev
 
 		_render_pass.Init(_device, _swapchain);
 
-		create_command_pool();
+		_command_pool.Init(_device);
 		create_depth_resource();
 		create_framebuffer();
 		//create_texture();
 		assimp_load_model();
-		create_descriptor_layout();
-		_pipeline.Init(_device, _render_pass, _swapchain, m_descriptor_layout);
-		create_plane();
-		create_texture_view();
+		_descriptor_layout = DescriptorSetLayout::Create(_device);
+		_pipeline.Init(_device, _render_pass, _swapchain, *_descriptor_layout->GetLayoutP());
 		create_texture_sampler();
 		create_vertex_buffer();
-		create_descriptor_pool();
+		_descriptor_pool.Init(_device);
 		create_descriptor_sets();
 		create_command_buffer();
 		create_semaphore();
@@ -155,31 +153,26 @@ namespace ev
 		vkDestroySemaphore(_device.GetLogicalDevice(), m_render_finish_semaphore, nullptr);
 		vkDestroyFence(_device.GetLogicalDevice(), m_inflight_fence, nullptr);
 
-		vkDestroyBuffer(_device.GetLogicalDevice(), m_vertex_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_vertex_buffer_memory, nullptr);
-		vkDestroyBuffer(_device.GetLogicalDevice(), m_index_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_index_buffer_memory, nullptr);
-		vkDestroyBuffer(_device.GetLogicalDevice(), m_uniform_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_uniform_memory, nullptr);
+		_vertex_buffer->Destroy(_device);
+		_index_buffer->Destroy(_device);
+		_uniform_buffer->Destroy(_device);
 
 		vkDestroySampler(_device.GetLogicalDevice(), m_texture_sampler, nullptr);
-		vkDestroyImageView(_device.GetLogicalDevice(), m_texture_img_view, nullptr);
-		vkDestroyImage(_device.GetLogicalDevice(), m_texture_img, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_texture_img_memory, nullptr);
+		_texture_img_view->Destroy(_device);
+		_texture_img->Destroy(_device);
 
-		vkDestroyImage(_device.GetLogicalDevice(), m_depth_img, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_depth_img_memory, nullptr);
-		vkDestroyImageView(_device.GetLogicalDevice(), m_depth_img_view, nullptr);
+		_depth_img->Destroy(_device);
+		_depth_img_view->Destroy(_device);
 
-		vkDestroyDescriptorPool(_device.GetLogicalDevice(), m_descriptor_pool, nullptr);
-		vkDestroyDescriptorSetLayout(_device.GetLogicalDevice(), m_descriptor_layout, nullptr);
+		_descriptor_pool.Destroy(_device);
+		_descriptor_layout->Destroy(_device);
 
 		for (auto& framebuffer : m_swapchain_framebuffers)
 		{
 			vkDestroyFramebuffer(_device.GetLogicalDevice(), framebuffer, nullptr);
 		}
 
-		vkDestroyCommandPool(_device.GetLogicalDevice(), m_command_pool, nullptr);
+		_command_pool.Destroy(_device);
 
 		//清理Vulkan
 		_render_pass.Destroy(_device);
@@ -286,15 +279,13 @@ namespace ev
 		vkDestroySemaphore(_device.GetLogicalDevice(), m_render_finish_semaphore, nullptr);
 		vkDestroyFence(_device.GetLogicalDevice(), m_inflight_fence, nullptr);
 
-		vkDestroyImage(_device.GetLogicalDevice(), m_depth_img, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), m_depth_img_memory, nullptr);
-		vkDestroyImageView(_device.GetLogicalDevice(), m_depth_img_view, nullptr);
+		_depth_img->Destroy(_device);
 
 		for (size_t i = 0; i < m_swapchain_framebuffers.size(); i++)
 		{
 			vkDestroyFramebuffer(_device.GetLogicalDevice(), m_swapchain_framebuffers[i], nullptr);
 		}
-		vkFreeCommandBuffers(_device.GetLogicalDevice(), m_command_pool, static_cast<uint32_t>(m_command_buffers.size())
+		vkFreeCommandBuffers(_device.GetLogicalDevice(), _command_pool.GetCommandPool(), static_cast<uint32_t>(m_command_buffers.size())
 			, m_command_buffers.data());
 
 		_pipeline.Destroy(_device);
@@ -304,7 +295,7 @@ namespace ev
 
 		_swapchain.ReCreate(_device, _surface);
 		_render_pass.Init(_device, _swapchain);
-		_pipeline.Init(_device, _render_pass, _swapchain, m_descriptor_layout);
+		_pipeline.Init(_device, _render_pass, _swapchain, *_descriptor_layout->GetLayoutP());
 		create_depth_resource();
 		create_framebuffer();
 		create_command_buffer();
@@ -312,38 +303,6 @@ namespace ev
 	}
 
 	#pragma region step
-
-	void VulkanContext::create_descriptor_layout()
-	{
-		//uniform
-		VkDescriptorSetLayoutBinding ubo_layout_binding = {};
-		ubo_layout_binding.binding = 0;
-		ubo_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		ubo_layout_binding.descriptorCount = 1;
-		ubo_layout_binding.stageFlags = VK_SHADER_STAGE_VERTEX_BIT;		//表明在顶点着色器阶段使用
-
-		//sampler
-		VkDescriptorSetLayoutBinding sampler_layout_binding = {};
-		sampler_layout_binding.binding = 1;
-		sampler_layout_binding.descriptorCount = 1;
-		sampler_layout_binding.descriptorType = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		sampler_layout_binding.pImmutableSamplers = nullptr;
-		sampler_layout_binding.stageFlags = VK_SHADER_STAGE_FRAGMENT_BIT;	//在片段着色器阶段使用
-
-		std::array<VkDescriptorSetLayoutBinding, 2> bindings = {
-			ubo_layout_binding, sampler_layout_binding
-		};
-
-		VkDescriptorSetLayoutCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
-		create_info.bindingCount = static_cast<uint32_t>(bindings.size());
-		create_info.pBindings = bindings.data();
-
-		if (vkCreateDescriptorSetLayout(_device.GetLogicalDevice(), &create_info, nullptr, &m_descriptor_layout) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create descriptor set layout!");
-		}
-	}
 
 	//为交换链的图片创建帧缓冲
 	void VulkanContext::create_framebuffer()
@@ -353,7 +312,7 @@ namespace ev
 		{
 			std::array<VkImageView, 2> attachments = {
 				_swapchain.GetImgView()[i],
-				m_depth_img_view
+				_depth_img_view->GetImageView()
 			};
 
 			VkFramebufferCreateInfo framebuffer_create_info = {};
@@ -373,21 +332,6 @@ namespace ev
 		}
 	}
 
-	//开始创建渲染命令
-	void VulkanContext::create_command_pool()
-	{
-		VkCommandPoolCreateInfo command_pool_create_info = {};
-		command_pool_create_info.sType = VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO;
-		command_pool_create_info.queueFamilyIndex = _device.device_info.graphic_queue_index;
-		command_pool_create_info.flags = 0;
-
-		if (vkCreateCommandPool(_device.GetLogicalDevice(), &command_pool_create_info, nullptr, &m_command_pool)
-			!= VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create command pool!");
-		}
-	}
-
 	void VulkanContext::create_depth_resource()
 	{
 		VkFormat depth_format = Utils::FindSupportedFormat(_device
@@ -395,94 +339,19 @@ namespace ev
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT);
 
-		create_image(_swapchain.swapchain_info.extent.width, _swapchain.swapchain_info.extent.height, depth_format
+		_depth_img = Image::Create(_device
+			, _swapchain.swapchain_info.extent.width
+			, _swapchain.swapchain_info.extent.height
+			, depth_format
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			, m_depth_img
-			, m_depth_img_memory
-			);
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 		
-		VkImageViewCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		create_info.image = m_depth_img;
-		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.format = depth_format;
-		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-		create_info.subresourceRange.baseMipLevel = 0;
-		create_info.subresourceRange.levelCount = 1;
-		create_info.subresourceRange.baseArrayLayer = 0;
-		create_info.subresourceRange.layerCount = 1;
+		_depth_img_view = ImageView::Create(_device, *_depth_img, depth_format, VK_IMAGE_ASPECT_DEPTH_BIT);
 
-		if (vkCreateImageView(_device.GetLogicalDevice(), &create_info, nullptr, &m_depth_img_view) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create texture img_view!");
-		}
-
-		tansition_img_layout(m_depth_img, depth_format,
+		tansition_img_layout(_depth_img->GetImage(), depth_format,
 			VK_IMAGE_LAYOUT_UNDEFINED,
 			VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
-	}
-
-	void VulkanContext::create_texture()
-	{
-		int tex_width, tex_height, tex_channels;
-		stbi_uc* pixels = stbi_load("assets/models/amiya/body_tex.png", &tex_width, &tex_height, &tex_channels
-			, STBI_rgb_alpha);		//使用了STBI_rgb_alpha，即使图片不包含alpha通道，也会强制加上
-		VkDeviceSize img_size = tex_width * tex_height * 4;		//一个像素需要一个字节0~255
-
-		//暂存缓冲
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_memory;
-
-		create_buffer(img_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			, staging_buffer
-			, staging_memory
-			);
-
-		void* data;
-		vkMapMemory(_device.GetLogicalDevice(), staging_memory, 0, img_size, 0, &data);
-		memcpy(data, pixels, img_size);
-		vkUnmapMemory(_device.GetLogicalDevice(), staging_memory);
-
-		stbi_image_free(pixels);	//释放图像数据
-
-		create_image(tex_width, tex_height
-			, VK_FORMAT_R8G8B8A8_UNORM
-			, VK_IMAGE_TILING_OPTIMAL
-			, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			, m_texture_img
-			, m_texture_img_memory
-		);
-
-		//把数据从暂存缓冲传入到image中
-		tansition_img_layout(m_texture_img, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		copy_buffer_image(staging_buffer, m_texture_img, tex_width, tex_height);
-		tansition_img_layout(m_texture_img, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
-
-		vkDestroyBuffer(_device.GetLogicalDevice(), staging_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), staging_memory, nullptr);
-	}
-
-	void VulkanContext::create_texture_view()
-	{
-		VkImageViewCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO;
-		create_info.image = m_texture_img;
-		create_info.viewType = VK_IMAGE_VIEW_TYPE_2D;
-		create_info.format = VK_FORMAT_R8G8B8A8_UNORM;
-		create_info.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		create_info.subresourceRange.baseMipLevel = 0;
-		create_info.subresourceRange.levelCount = 1;
-		create_info.subresourceRange.baseArrayLayer = 0;
-		create_info.subresourceRange.layerCount = 1;
-
-		if (vkCreateImageView(_device.GetLogicalDevice(), &create_info, nullptr, &m_texture_img_view) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create texture img_view!");
-		}
 	}
 
 	void VulkanContext::create_texture_sampler()
@@ -515,108 +384,56 @@ namespace ev
 		create_info.maxLod = 0.0f;
 
 		if (vkCreateSampler(_device.GetLogicalDevice(), &create_info, nullptr, &m_texture_sampler) != VK_SUCCESS)
-		{
 			throw std::runtime_error("falied to create sampler!");
-		}
 	}
 
 	void VulkanContext::create_vertex_buffer()
 	{
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_memory;
+		uint32_t vertex_size = sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize();
 
-		create_buffer(sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT	//CPU可见/CPU和GPU缓存保持一致
-			, staging_buffer, staging_memory
-		);
+		auto staging_buffer = Buffer::Create(_device
+			, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT, vertex_size);
 
 		//往暂存缓冲中填充数据
-		void* data;
-		vkMapMemory(_device.GetLogicalDevice(), staging_memory, 0, sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize(), 0, &data);	//memory映射到cpu可以访问的内存中
-		memcpy(data, _skinned_mesh.GetVerticesData(), sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize());
-		vkUnmapMemory(_device.GetLogicalDevice(), staging_memory);
+		staging_buffer->InputData(_device, vertex_size, _skinned_mesh.GetVerticesData());
 
-		create_buffer(sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize()
-			, (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT		//表明这块内存是GPU内部
-			, m_vertex_buffer, m_vertex_buffer_memory
-			);
+		_vertex_buffer = Buffer::Create(_device
+			, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			, vertex_size);
 
 		//将暂存buffer的数据传入到vertex buffer中
-		copy_buffer(staging_buffer, m_vertex_buffer, sizeof(SkinnedMesh::Vertex) * _skinned_mesh.GetVerticesSize());
-
-		vkDestroyBuffer(_device.GetLogicalDevice(), staging_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), staging_memory, nullptr);
+		_vertex_buffer->InputData(_device, vertex_size, *staging_buffer, _command_pool);
+		staging_buffer->Destroy(_device);
 
 		//*********************************************** Index buffer *****************************************************
 
-		create_buffer(sizeof(uint32_t) * _skinned_mesh.GetIndicesSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT
-			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT	//CPU可见/CPU和GPU缓存保持一致
-			, staging_buffer, staging_memory
-		);
+		uint32_t index_size = sizeof(uint32_t) * _skinned_mesh.GetIndicesSize();
+		auto index_staging_buffer = Buffer::Create(_device
+		, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
+		, index_size);
+
+		index_staging_buffer->InputData(_device, index_size, _skinned_mesh.GetIndicesData());
 
 		//往暂存缓冲中填充数据
-		vkMapMemory(_device.GetLogicalDevice(), staging_memory, 0, sizeof(uint32_t) * _skinned_mesh.GetIndicesSize(), 0, &data);	//memory映射到cpu可以访问的内存中
-		memcpy(data, _skinned_mesh.GetIndicesData(), sizeof(uint32_t) * _skinned_mesh.GetIndicesSize());
-		vkUnmapMemory(_device.GetLogicalDevice(), staging_memory);
-
-		create_buffer(sizeof(uint32_t) * _skinned_mesh.GetIndicesSize()
-			, (VkBufferUsageFlagBits)(VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT)
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT		//表明这块内存是GPU内部
-			, m_index_buffer, m_index_buffer_memory
-		);
+		_index_buffer = Buffer::Create(_device
+			, VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
+			, index_size);
 
 		//将暂存buffer的数据传入到index buffer中
-		copy_buffer(staging_buffer, m_index_buffer, sizeof(uint32_t) * _skinned_mesh.GetIndicesSize());
-
-		vkDestroyBuffer(_device.GetLogicalDevice(), staging_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), staging_memory, nullptr);
+		_index_buffer->InputData(_device, index_size, *index_staging_buffer, _command_pool);
+		index_staging_buffer->Destroy(_device);
 
 		//********************************************* Uniform buffer ***************************************************
 
-		create_buffer(sizeof(UniformBufferObject), VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
+		int uniform_size = sizeof(UniformBufferObject);
+		_uniform_buffer = Buffer::Create(_device
+			, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT
 			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			, m_uniform_buffer
-			, m_uniform_memory
-			);
-	}
-
-	void VulkanContext::load_model()
-	{
-		/*tinyobj::attrib_t attrib;
-		std::vector<tinyobj::shape_t> shapes;
-		std::vector<tinyobj::material_t> materials;
-		std::string err;
-		if (!tinyobj::LoadObj(&attrib, &shapes, &materials, nullptr, &err, "assets/models/amiya/amiya.obj"))
-		{
-			throw std::runtime_error(err);
-		}
-
-		for (const auto& shape : shapes)
-		{
-			for (const auto& index : shape.mesh.indices)
-			{
-				Vertex vertex = {};
-
-				vertex.pos =
-				{
-					attrib.vertices[3 * index.vertex_index + 0],
-					attrib.vertices[3 * index.vertex_index + 1],
-					attrib.vertices[3 * index.vertex_index + 2]
-				};
-
-				vertex.tex_coord =
-				{
-					attrib.texcoords[2 * index.texcoord_index + 0],
-					1.0f - attrib.texcoords[2 * index.texcoord_index + 1],
-				};
-
-				vertex.color = { 1.0f, 1.0f, 1.0f };
-
-				vertices.push_back(vertex);
-				indices.push_back(indices.size());
-			}
-		}*/
+			, uniform_size);
 	}
 
 	void VulkanContext::assimp_load_model()
@@ -644,76 +461,43 @@ namespace ev
 		VkDeviceSize img_size = img_width * img_height * 4;
 
 		//暂存缓冲
-		VkBuffer staging_buffer;
-		VkDeviceMemory staging_memory;
-
-		create_buffer(img_size, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
+		auto staging_buffer = Buffer::Create(_device
+			, VK_BUFFER_USAGE_TRANSFER_SRC_BIT
 			, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT
-			, staging_buffer
-			, staging_memory
-		);
+			, img_size);
 
-		void* data;
-		vkMapMemory(_device.GetLogicalDevice(), staging_memory, 0, img_size, 0, &data);
-		memcpy(data, pixels, img_size);
-		vkUnmapMemory(_device.GetLogicalDevice(), staging_memory);
+		staging_buffer->InputData(_device, img_size, pixels);
 
 		stbi_image_free(pixels);
 
-		create_image(img_width, img_height
+		_texture_img = Image::Create(_device
+			, img_width
+			, img_height
 			, VK_FORMAT_R8G8B8A8_UNORM
 			, VK_IMAGE_TILING_OPTIMAL
 			, VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT
-			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT
-			, m_texture_img
-			, m_texture_img_memory
-		);
+			, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
 
 		//把数据从暂存缓冲传入到image中
-		tansition_img_layout(m_texture_img, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
-		copy_buffer_image(staging_buffer, m_texture_img, img_width, img_height);
-		tansition_img_layout(m_texture_img, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+		tansition_img_layout(_texture_img->GetImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+		_texture_img->InputData(_device, img_width, img_height, *staging_buffer, _command_pool);
+		tansition_img_layout(_texture_img->GetImage(), VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
-		vkDestroyBuffer(_device.GetLogicalDevice(), staging_buffer, nullptr);
-		vkFreeMemory(_device.GetLogicalDevice(), staging_memory, nullptr);
+		staging_buffer->Destroy(_device);
+
+		_texture_img_view = ImageView::Create(_device, *_texture_img, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT);
 
 		_skinned_mesh.LoadMesh(scene, scene->mMeshes[0]);
 		_skinned_mesh.LoadAnimation(scene->mAnimations[0]);
-	}
-
-	void VulkanContext::create_plane()
-	{
-	}
-
-	void VulkanContext::create_descriptor_pool()
-	{
-		std::array<VkDescriptorPoolSize, 2> pool_sizes = {};
-		pool_sizes[0].type = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-		pool_sizes[0].descriptorCount = 1;
-
-		pool_sizes[1].type = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-		pool_sizes[1].descriptorCount = 1;
-
-		VkDescriptorPoolCreateInfo create_info = {};
-		create_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO;
-		create_info.poolSizeCount = static_cast<uint32_t>(pool_sizes.size());
-		create_info.pPoolSizes = pool_sizes.data();
-
-		create_info.maxSets = 1;
-
-		if (vkCreateDescriptorPool(_device.GetLogicalDevice(), &create_info, nullptr, &m_descriptor_pool) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create descriptor pool!");
-		}
 	}
 
 	void VulkanContext::create_descriptor_sets()
 	{
 		VkDescriptorSetAllocateInfo alloc_info = {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
-		alloc_info.descriptorPool = m_descriptor_pool;
+		alloc_info.descriptorPool = _descriptor_pool.GetPool();
 		alloc_info.descriptorSetCount = 1;
-		alloc_info.pSetLayouts = &m_descriptor_layout;
+		alloc_info.pSetLayouts = _descriptor_layout->GetLayoutP();
 
 		if (vkAllocateDescriptorSets(_device.GetLogicalDevice(), &alloc_info, &m_descriptor_set) != VK_SUCCESS)
 		{
@@ -721,13 +505,13 @@ namespace ev
 		}
 
 		VkDescriptorBufferInfo buffer_info = {};
-		buffer_info.buffer = m_uniform_buffer;
+		buffer_info.buffer = _uniform_buffer->GetBuffer();
 		buffer_info.offset = 0;
 		buffer_info.range = sizeof(UniformBufferObject);
 
 		VkDescriptorImageInfo img_info = {};
 		img_info.imageLayout = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-		img_info.imageView = m_texture_img_view;
+		img_info.imageView = _texture_img_view->GetImageView();
 		img_info.sampler = m_texture_sampler;
 
 		std::array<VkWriteDescriptorSet, 2> descriptor_writes = {};
@@ -758,7 +542,7 @@ namespace ev
 
 		VkCommandBufferAllocateInfo alloc_info = {};
 		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.commandPool = m_command_pool;
+		alloc_info.commandPool = _command_pool.GetCommandPool();
 		alloc_info.level = VK_COMMAND_BUFFER_LEVEL_PRIMARY;
 		alloc_info.commandBufferCount = (uint32_t)m_command_buffers.size();
 
@@ -800,12 +584,12 @@ namespace ev
 			//绑定渲染管线
 			vkCmdBindPipeline(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.GetPipeline());
 
-			VkBuffer vertex_buffers[] = { m_vertex_buffer };
+			VkBuffer vertex_buffers[] = { _vertex_buffer->GetBuffer()};
 			VkDeviceSize offsets[] = { 0 };
 			vkCmdBindVertexBuffers(m_command_buffers[i], 0, 1, vertex_buffers, offsets);
 			vkCmdBindDescriptorSets(m_command_buffers[i], VK_PIPELINE_BIND_POINT_GRAPHICS, _pipeline.GetPipelineLayout()
 				, 0, 1, &m_descriptor_set, 0, nullptr);
-			vkCmdBindIndexBuffer(m_command_buffers[i], m_index_buffer, 0, VK_INDEX_TYPE_UINT32);
+			vkCmdBindIndexBuffer(m_command_buffers[i], _index_buffer->GetBuffer(), 0, VK_INDEX_TYPE_UINT32);
 
 			//绘制
 			vkCmdDrawIndexed(m_command_buffers[i], static_cast<uint32_t>(_skinned_mesh.GetIndicesSize()), 1, 0, 0, 0);
@@ -846,134 +630,14 @@ namespace ev
 
 	#pragma endregion
 
-	uint32_t VulkanContext::find_memory_type(uint32_t filter, VkMemoryPropertyFlags properties)
-	{
-		VkPhysicalDeviceMemoryProperties mem_properties;
-		vkGetPhysicalDeviceMemoryProperties(_device.GetPhysicalDevice(), &mem_properties);
-		for (uint32_t i = 0; i < mem_properties.memoryTypeCount; i++)
-		{
-			if ((filter & (1 << i)) && (mem_properties.memoryTypes[i].propertyFlags & properties) == properties)
-				return i;
-		}
-	}
-
 	void VulkanContext::OnUpdate(float delta)
 	{
 		_camera_controller.OnUpdate(delta);
 	}
 
-	void VulkanContext::create_buffer(VkDeviceSize size, VkBufferUsageFlagBits usage, VkMemoryPropertyFlags properties
-		, VkBuffer& buffer, VkDeviceMemory& memory)
-	{
-		VkBufferCreateInfo buffer_create_info = {};
-		buffer_create_info.sType = VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO;
-		buffer_create_info.size = size;
-		buffer_create_info.usage = usage;
-		buffer_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-
-		if (vkCreateBuffer(_device.GetLogicalDevice(), &buffer_create_info, nullptr, &buffer) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create buffer!");
-		}
-
-		//内存
-		VkMemoryRequirements mem_requirment;
-		vkGetBufferMemoryRequirements(_device.GetLogicalDevice(), buffer, &mem_requirment);
-
-		VkMemoryAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirment.size;
-		alloc_info.memoryTypeIndex = find_memory_type(mem_requirment.memoryTypeBits
-			, properties
-			);
-		
-		if (vkAllocateMemory(_device.GetLogicalDevice(), &alloc_info, nullptr, &memory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to allocate memory!");
-		}
-
-		vkBindBufferMemory(_device.GetLogicalDevice(), buffer, memory, 0);
-	}
-
-	void VulkanContext::create_image(uint32_t width, uint32_t height, VkFormat format, VkImageTiling tiling
-		, VkImageUsageFlags usage, VkMemoryPropertyFlags properties, VkImage& image, VkDeviceMemory& memory)
-	{
-		//开始创建VkImage
-		VkImageCreateInfo img_create_info = {};
-		img_create_info.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-		img_create_info.imageType = VK_IMAGE_TYPE_2D;
-		img_create_info.extent.width = width;
-		img_create_info.extent.height = height;
-		img_create_info.extent.depth = 1;
-		img_create_info.mipLevels = 1;
-		img_create_info.arrayLayers = 1;
-		img_create_info.format = format;
-		img_create_info.tiling = tiling;	//纹素的排列方式
-		img_create_info.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;	//第一次变换后就丢弃？
-		img_create_info.usage = usage;
-		img_create_info.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-		img_create_info.samples = VK_SAMPLE_COUNT_1_BIT;
-
-		if (vkCreateImage(_device.GetLogicalDevice(), &img_create_info, nullptr, &image) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to create image!");
-		}
-
-		VkMemoryRequirements mem_requirement;
-		vkGetImageMemoryRequirements(_device.GetLogicalDevice(), image, &mem_requirement);
-
-		VkMemoryAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO;
-		alloc_info.allocationSize = mem_requirement.size;
-		alloc_info.memoryTypeIndex = find_memory_type(mem_requirement.memoryTypeBits, properties);
-
-		if (vkAllocateMemory(_device.GetLogicalDevice(), &alloc_info, nullptr, &memory) != VK_SUCCESS)
-		{
-			throw std::runtime_error("failed to allocate img memory!");
-		}
-
-		vkBindImageMemory(_device.GetLogicalDevice(), image, memory, 0);
-	}
-
 	void VulkanContext::OnWindowResizeEvent(const WindowResizeEvent& e)
 	{
 		wanna_recreate_swapchain();
-	}
-
-	//使用命令池传输数据
-	void VulkanContext::copy_buffer(VkBuffer src_buffer, VkBuffer dst_buffer, VkDeviceSize size)
-	{
-		VkCommandBuffer command_buffer = begin_command_buffer();
-
-		VkBufferCopy copy_region = {};
-		copy_region.srcOffset = 0;
-		copy_region.dstOffset = 0;
-		copy_region.size = size;
-		vkCmdCopyBuffer(command_buffer, src_buffer, dst_buffer, 1, &copy_region);
-
-		end_command_buffer(command_buffer);
-	}
-
-	void VulkanContext::copy_buffer_image(VkBuffer buffer, VkImage img, uint32_t width, uint32_t height)
-	{
-		VkCommandBuffer command_buffer = begin_command_buffer();
-
-		VkBufferImageCopy region = {};
-		region.bufferOffset = 0;
-		region.bufferRowLength = 0;
-		region.bufferImageHeight = 0;
-
-		region.imageSubresource.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-		region.imageSubresource.mipLevel = 0;
-		region.imageSubresource.baseArrayLayer = 0;
-		region.imageSubresource.layerCount = 1;
-
-		region.imageOffset = { 0, 0, 0 };
-		region.imageExtent = { width, height, 1 };
-
-		vkCmdCopyBufferToImage(command_buffer, buffer, img, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &region);
-
-		end_command_buffer(command_buffer);
 	}
 
 	void VulkanContext::update_uniform_data()
@@ -1000,45 +664,7 @@ namespace ev
 		for (int i = 0; i < bone_vector.size(); i++)
 			ubo.bones[i] = bone_vector[i];
 
-		void* data;
-		vkMapMemory(_device.GetLogicalDevice(), m_uniform_memory, 0, sizeof(ubo), 0, &data);
-		memcpy(data, &ubo, sizeof(ubo));
-		vkUnmapMemory(_device.GetLogicalDevice(), m_uniform_memory);
-	}
-
-	VkCommandBuffer VulkanContext::begin_command_buffer()
-	{
-		VkCommandBufferAllocateInfo alloc_info = {};
-		alloc_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO;
-		alloc_info.commandPool = m_command_pool;
-		alloc_info.commandBufferCount = 1;
-
-		VkCommandBuffer command_buffer;
-		vkAllocateCommandBuffers(_device.GetLogicalDevice(), &alloc_info, &command_buffer);
-
-		//开始记录指令
-		VkCommandBufferBeginInfo begin_info = {};
-		begin_info.sType = VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO;
-		begin_info.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
-		vkBeginCommandBuffer(command_buffer, &begin_info);
-		
-		return command_buffer;
-	}
-
-	void VulkanContext::end_command_buffer(VkCommandBuffer command_buffer)
-	{
-		vkEndCommandBuffer(command_buffer);
-
-		//提交指令
-		VkSubmitInfo submit_info = {};
-		submit_info.sType = VK_STRUCTURE_TYPE_SUBMIT_INFO;
-		submit_info.commandBufferCount = 1;
-		submit_info.pCommandBuffers = &command_buffer;
-
-		vkQueueSubmit(_device.GetGraphicQueue(), 1, &submit_info, VK_NULL_HANDLE);
-		vkQueueWaitIdle(_device.GetGraphicQueue());
-
-		vkFreeCommandBuffers(_device.GetLogicalDevice(), m_command_pool, 1, &command_buffer);
+		_uniform_buffer->InputData(_device, sizeof(ubo), &ubo);
 	}
 
 	static bool hasStencilComponent(VkFormat format) {
@@ -1048,7 +674,8 @@ namespace ev
 
 	void VulkanContext::tansition_img_layout(VkImage img, VkFormat format, VkImageLayout old_layout, VkImageLayout new_layout)
 	{
-		VkCommandBuffer command_buffer = begin_command_buffer();
+		auto com_buffer = CommandBuffer::Create();
+		com_buffer->BeginCommand(_device, _command_pool);
 
 		VkImageMemoryBarrier barrier = {};
 		barrier.sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
@@ -1112,8 +739,8 @@ namespace ev
 			throw std::invalid_argument("unsupported layout transition!");
 		}
 
-		vkCmdPipelineBarrier(command_buffer, sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
+		vkCmdPipelineBarrier(com_buffer->GetBuffer(), sourceStage, destinationStage, 0, 0, nullptr, 0, nullptr, 1, &barrier);
 
-		end_command_buffer(command_buffer);
+		com_buffer->EndCommand(_device, _command_pool);
 	}
 }

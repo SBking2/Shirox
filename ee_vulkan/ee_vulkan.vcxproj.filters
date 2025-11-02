@@ -57,7 +57,37 @@
     <ClCompile Include="src\Vulkan\Core\RenderPipeline.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
-    <ClCompile Include="src\Vulkan\RenderObject\ShaderModule.cpp">
+    <ClCompile Include="src\Vulkan\RenderObject\Shader\ShaderModule.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\DescriptorSetLayout\DescriptorSetLayout.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\CommandPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\Image\Image.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\Buffer\Buffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\Core\DescriptorPool.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\FrameBuffer\FrameBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\CommandBuffer\CommandBuffer.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\Semaphore\Fence.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\Semaphore\Semaphore.cpp">
+      <Filter>源文件</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Vulkan\RenderObject\Image\ImageView.cpp">
       <Filter>源文件</Filter>
     </ClCompile>
   </ItemGroup>
@@ -116,7 +146,37 @@
     <ClInclude Include="src\Vulkan\Core\RenderPipeline.h">
       <Filter>头文件</Filter>
     </ClInclude>
-    <ClInclude Include="src\Vulkan\RenderObject\ShaderModule.h">
+    <ClInclude Include="src\Vulkan\RenderObject\Shader\ShaderModule.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\DescriptorSetLayout\DescriptorSetLayout.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\CommandPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\Image\Image.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\Buffer\Buffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\Core\DescriptorPool.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\FrameBuffer\FrameBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\CommandBuffer\CommandBuffer.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\Semaphore\Fence.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\Semaphore\Semaphore.h">
+      <Filter>头文件</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Vulkan\RenderObject\Image\ImageView.h">
       <Filter>头文件</Filter>
     </ClInclude>
   </ItemGroup>
