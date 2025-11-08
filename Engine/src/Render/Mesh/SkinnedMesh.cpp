@@ -4,7 +4,7 @@
 #include <glm/gtc/quaternion.hpp>
 #include <stdexcept>
 #include <glm/gtx/quaternion.hpp>
-namespace ev
+namespace srx
 {
 	void SkinnedMesh::LoadMesh(const aiScene* scene, aiMesh* mesh)
 	{
