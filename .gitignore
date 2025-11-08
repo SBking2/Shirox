@@ -1,4 +1,12 @@
+# 第三方库
+vendor
+# 生成的文件
+Build
+Build-Int
+# vs生成的文件
 .vs
 *.sln
-x64
-ee_vulkan/vendor
+*.vcxproj*
+*.filters
+*.xcodeproj/
+*.workspace/
