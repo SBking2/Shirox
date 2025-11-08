@@ -1,7 +1,4 @@
 #pragma once
-#include <string>
-#include <unordered_map>
-#include <vector>
 #include <GLM/glm.hpp>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>

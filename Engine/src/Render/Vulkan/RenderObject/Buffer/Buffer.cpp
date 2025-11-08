@@ -1,6 +1,7 @@
+#include "PCH.h"
 #include "Buffer.h"
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	std::shared_ptr<Buffer> Buffer::Create(const Device& device
 		, BufferUsage usage, BufferProperty properties, BufferSize size)

@@ -7,9 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <GLM/glm.hpp>
 
-#include <string>
-#include <functional>
-namespace ev
+namespace srx
 {
 	class Window : public Singleton<Window>
 	{

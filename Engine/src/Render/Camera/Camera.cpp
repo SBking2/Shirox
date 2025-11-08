@@ -1,6 +1,7 @@
+#include "PCH.h"
 #include "Camera.h"
 #include <GLM/gtx/quaternion.hpp>
-namespace ev
+namespace srx
 {
 	glm::mat4 Camera::GetViewMatrix()
 	{

@@ -1,7 +1,8 @@
+#include "PCH.h"
 #include "DescriptorPool.h"
 #include <array>
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	void DescriptorPool::Init(const Device& device)
 	{

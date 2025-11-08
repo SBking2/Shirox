@@ -1,9 +1,8 @@
 #pragma once
-
 namespace srx
 {
-	class RenderAPI final
+	class Renderer final
 	{
-		
+
 	};
 }

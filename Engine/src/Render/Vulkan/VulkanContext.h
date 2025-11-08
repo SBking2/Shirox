@@ -29,7 +29,7 @@
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>
 
-namespace ev
+namespace srx
 {
 	class VulkanContext : public Singleton<VulkanContext>
 	{

@@ -6,7 +6,7 @@
 #include <string>
 #include <vector>
 #include <memory>
-namespace ev
+namespace srx
 {
 	class ShaderModule final
 	{

@@ -4,8 +4,7 @@
 
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#include <chrono>
-namespace ev
+namespace srx
 {
 	class Application
 	{

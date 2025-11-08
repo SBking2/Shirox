@@ -2,7 +2,7 @@
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>
 #include <glm/gtc/quaternion.hpp>
-namespace ev
+namespace srx
 {
 	class Camera final
 	{

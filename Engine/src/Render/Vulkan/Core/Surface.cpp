@@ -1,6 +1,7 @@
+#include "PCH.h"
 #include "Surface.h"
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	void Surface::Init(GLFWwindow* window, const Instance& instance)
 	{

@@ -1,8 +1,9 @@
+#include "PCH.h"
 #include "Instance.h"
 #include <iostream>
 #include <stdexcept>
 #include <map>
-namespace ev
+namespace srx
 {
 	static VKAPI_ATTR VkBool32 VKAPI_CALL debug_callback(
 		VkDebugUtilsMessageSeverityFlagBitsEXT message_severity,

@@ -1,6 +1,7 @@
+#include "PCH.h"
 #include "ShaderModule.h"
 #include <fstream>
-namespace ev
+namespace srx
 {
 	std::shared_ptr<ShaderModule> ShaderModule::Create(const Device& device, const std::string& path)
 	{

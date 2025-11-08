@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ev
+namespace srx
 {
 #define EV_MOUSE_BUTTON_1         0
 #define EV_MOUSE_BUTTON_2         1

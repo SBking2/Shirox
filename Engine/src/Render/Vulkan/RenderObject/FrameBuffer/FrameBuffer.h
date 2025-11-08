@@ -7,7 +7,7 @@
 #include <GLFW/glfw3.h>
 #include <memory>
 #include <vector>
-namespace ev
+namespace srx
 {
 	class FrameBuffer final
 	{

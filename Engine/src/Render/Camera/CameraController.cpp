@@ -1,10 +1,11 @@
+#include "PCH.h"
 #include "CameraController.h"
 #include "Core/Utils/Utils.h"
 #include "Core/Event/EVCode/EVKeyCode.h"
 #include "Core/Event/EVCode/EVMouseButtonCode.h"
 #include "Core/Window/Window.h"
 #include <GLM/gtc/matrix_transform.hpp>
-namespace ev
+namespace srx
 {
 	CameraController::CameraController(Camera* camera):_camera(camera)
 	{

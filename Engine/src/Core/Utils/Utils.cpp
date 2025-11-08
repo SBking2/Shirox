@@ -1,7 +1,7 @@
+#include "PCH.h"
 #include "Utils.h"
 #include <glm/gtx/quaternion.hpp> 
-#include <stdexcept>
-namespace ev
+namespace srx
 {
 	glm::mat4 Utils::Ai2GlmMat4(const aiMatrix4x4& ai_matrix)
 	{

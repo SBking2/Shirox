@@ -1,6 +1,7 @@
+#include "PCH.h"
 #include "CommandPool.h"
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	void CommandPool::Init(const Device& device)
 	{

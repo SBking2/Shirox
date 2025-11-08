@@ -1,6 +1,6 @@
 #pragma once
 #include <cstdint>
-namespace ev
+namespace srx
 {
 #define GetStaticType(x) static EventType GetStaticEventType() { return x; }
 #define GetType(x) EventType GetEventType() const override { return x; }

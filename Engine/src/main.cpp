@@ -1,11 +1,8 @@
-﻿#include "Core/Application/Application.h"
-
-#include <iostream>
-#include <exception>
-#include <vector>
+﻿#include "PCH.h"
+#include "Core/Application/Application.h"
 int main()
 {
-	ev::Application* app = new ev::Application();
+	srx::Application* app = new srx::Application();
 	app->Init();
 
 	try

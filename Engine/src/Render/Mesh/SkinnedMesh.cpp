@@ -1,8 +1,9 @@
+#include "PCH.h"
 #include "SkinnedMesh.h"
 #include "Core/Utils/Utils.h"
 #include <glm/gtc/matrix_transform.hpp>
+#include "PCH.h"
 #include <glm/gtc/quaternion.hpp>
-#include <stdexcept>
 #include <glm/gtx/quaternion.hpp>
 namespace srx
 {

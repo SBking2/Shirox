@@ -1,6 +1,6 @@
 #pragma once
 
-namespace ev
+namespace srx
 {
 /* The unknown key */
 #define EV_KEY_UNKNOWN            -1

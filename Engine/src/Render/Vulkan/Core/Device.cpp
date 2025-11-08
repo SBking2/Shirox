@@ -1,8 +1,9 @@
+#include "PCH.h"
 #include "Device.h"
 #include<set>
 #include <map>
 #include<stdexcept>
-namespace ev
+namespace srx
 {
 	void Device::Init(const Instance& instance, const Surface& surface)
 	{

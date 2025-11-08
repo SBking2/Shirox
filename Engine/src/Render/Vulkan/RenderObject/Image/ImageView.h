@@ -5,7 +5,7 @@
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 #include <memory>
-namespace ev
+namespace srx
 {
 	typedef uint32_t AspectMask;
 

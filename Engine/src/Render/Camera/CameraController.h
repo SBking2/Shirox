@@ -2,11 +2,10 @@
 #include "Camera.h"
 #include "Core/Event/Event.h"
 #include "Core/Event/EventDispatcher.h"
-#include <memory>
 #include <GLM/glm.hpp>
 #include <GLM/gtc/quaternion.hpp>
 #include <GLM/gtx/quaternion.hpp>
-namespace ev
+namespace srx
 {
 	class CameraController final
 	{

@@ -1,9 +1,9 @@
-﻿#include "Application.h"
+﻿#include "PCH.h"
+#include "Application.h"
 #include "Render/Vulkan/VulkanContext.h"
 #include "Core/Window/Window.h"
-#include <functional>
 
-namespace ev
+namespace srx
 {
 
 	void Application::Init()

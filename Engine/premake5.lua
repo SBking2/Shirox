@@ -31,6 +31,9 @@ project "Engine"
         "assimp-vc143-mtd"
     }
 
+    pchheader "PCH.h"
+    pchsource "src/PCH.cpp"
+
     filter "configurations:Debug"
         symbols "On"
 

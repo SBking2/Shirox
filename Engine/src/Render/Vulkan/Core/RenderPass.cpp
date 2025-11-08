@@ -1,8 +1,9 @@
+#include "PCH.h"
 #include "RenderPass.h"
 #include "Core/Utils/Utils.h"
 #include <array>
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	void RenderPass::Init(const Device& device, const Swapchain& swapchain)
 	{

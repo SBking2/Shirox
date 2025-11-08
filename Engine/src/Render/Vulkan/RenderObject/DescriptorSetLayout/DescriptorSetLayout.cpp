@@ -1,7 +1,8 @@
+#include "PCH.h"
 #include "DescriptorSetLayout.h"
 #include <array>
 #include <stdexcept>
-namespace ev
+namespace srx
 {
 	std::shared_ptr<DescriptorSetLayout> DescriptorSetLayout::Create(const Device& device)
 	{
