@@ -1,13 +1,15 @@
 ﻿#include "PCH.h"
 #include "Application.h"
 #include "Render/Vulkan/VulkanContext.h"
-#include "Core/Window/Window.h"
+#include "Window/Window.h"
 
 namespace srx
 {
 
 	void Application::Init()
 	{
+		Log::Init("assets/log/log.log");
+		Log::SetLevel(LogLevel::Trace);
 		Window::GetInstance()->Init(800, 600, "vulkan_example");
 		Window::GetInstance()->SetEventCallback(std::bind(&Application::OnEvent, this, std::placeholders::_1));
 
@@ -24,6 +26,7 @@ namespace srx
 			VulkanContext::GetInstance()->OnUpdate(delta.count());
 			VulkanContext::GetInstance()->draw_frame();
 			_last_time = now;
+			Log::LogError("Hellow World!");
 		}
 	}
 

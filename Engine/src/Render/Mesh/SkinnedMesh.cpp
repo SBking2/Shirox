@@ -1,10 +1,5 @@
 #include "PCH.h"
 #include "SkinnedMesh.h"
-#include "Core/Utils/Utils.h"
-#include <glm/gtc/matrix_transform.hpp>
-#include "PCH.h"
-#include <glm/gtc/quaternion.hpp>
-#include <glm/gtx/quaternion.hpp>
 namespace srx
 {
 	void SkinnedMesh::LoadMesh(const aiScene* scene, aiMesh* mesh)

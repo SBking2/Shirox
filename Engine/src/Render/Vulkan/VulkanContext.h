@@ -1,7 +1,4 @@
 #pragma once
-#include "Core/Singleton/Singleton.h"
-#include "Core/Event/Event.h"
-#include "Core/Event/EventDispatcher.h"
 #include "Render/Camera/CameraController.h"
 #include "Render/Camera/Camera.h"
 #include "Render/Mesh/SkinnedMesh.h"
@@ -22,9 +19,6 @@
 #define GLFW_INCLUED_VULKAN
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
-#include <GLM/glm.hpp>
-#include <vector>
-#include <string>
 #include <assimp/Importer.hpp>
 #include <assimp/scene.h>
 #include <assimp/postprocess.h>

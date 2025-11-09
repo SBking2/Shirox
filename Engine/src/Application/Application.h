@@ -1,5 +1,4 @@
 #pragma once
-#include "Core/Event/Event.h"
 #define GLFW_INCLUED_VULKAN
 
 #include <vulkan/vulkan.h>

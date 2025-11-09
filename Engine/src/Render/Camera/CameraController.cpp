@@ -1,10 +1,6 @@
 #include "PCH.h"
 #include "CameraController.h"
-#include "Core/Utils/Utils.h"
-#include "Core/Event/EVCode/EVKeyCode.h"
-#include "Core/Event/EVCode/EVMouseButtonCode.h"
-#include "Core/Window/Window.h"
-#include <GLM/gtc/matrix_transform.hpp>
+#include "Window/Window.h"
 namespace srx
 {
 	CameraController::CameraController(Camera* camera):_camera(camera)
@@ -54,37 +50,37 @@ namespace srx
 
 	void CameraController::OnKeyEvent(const KeyEvent& e)
 	{	
-		if (e.action != EV_RELEASE)
+		if (e.action != SRX_RELEASE)
 		{
 			switch (e.keycode)
 			{
-			case EV_KEY_W:
+			case SRX_KEY_W:
 				_move_input.y = 1.0f;
 				break;
-			case EV_KEY_S:
+			case SRX_KEY_S:
 				_move_input.y = -1.0f;
 				break;
-			case EV_KEY_A:
+			case SRX_KEY_A:
 				_move_input.x = -1.0f;
 				break;
-			case EV_KEY_D:
+			case SRX_KEY_D:
 				_move_input.x = 1.0f;
 				break;
 			}
-		}else if (e.action == EV_RELEASE)
+		}else if (e.action == SRX_RELEASE)
 		{
 			switch (e.keycode)
 			{
-			case EV_KEY_W:
+			case SRX_KEY_W:
 				_move_input.y = 0.0f;
 				break;
-			case EV_KEY_S:
+			case SRX_KEY_S:
 				_move_input.y = 0.0f;
 				break;
-			case EV_KEY_A:
+			case SRX_KEY_A:
 				_move_input.x = 0.0f;
 				break;
-			case EV_KEY_D:
+			case SRX_KEY_D:
 				_move_input.x = 0.0f;
 				break;
 			}
@@ -93,18 +89,18 @@ namespace srx
 
 	void CameraController::OnMouseButtonEvent(const MouseButtonEvent& e)
 	{
-		if (e.action == EV_PRESS)
+		if (e.action == SRX_PRESS)
 		{
 			switch (e.keycode)
 			{
-			case EV_MOUSE_BUTTON_RIGHT:
+			case SRX_MOUSE_BUTTON_RIGHT:
 				if (!_is_translation_camera)
 				{
 					_is_fly_camera = true;
 					Window::GetInstance()->SetCursorLockMode(true);
 				}
 				break;
-			case EV_MOUSE_BUTTON_MIDDLE:
+			case SRX_MOUSE_BUTTON_MIDDLE:
 				if (!_is_fly_camera)
 				{
 					_is_translation_camera = true;
@@ -114,18 +110,18 @@ namespace srx
 			}
 		}
 
-		if (e.action == EV_RELEASE)
+		if (e.action == SRX_RELEASE)
 		{
 			switch (e.keycode)
 			{
-			case EV_MOUSE_BUTTON_RIGHT:
+			case SRX_MOUSE_BUTTON_RIGHT:
 				if (!_is_translation_camera)
 				{
 					_is_fly_camera = false;
 					Window::GetInstance()->SetCursorLockMode(false);
 				}
 				break;
-			case EV_MOUSE_BUTTON_MIDDLE:
+			case SRX_MOUSE_BUTTON_MIDDLE:
 				if (!_is_fly_camera)
 				{
 					_is_translation_camera = false;

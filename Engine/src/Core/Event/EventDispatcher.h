@@ -1,6 +1,5 @@
 #pragma once
 #include "Event.h"
-#include <functional>
 namespace srx
 {
 	class EventDispathcer final

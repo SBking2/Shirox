@@ -1,17 +1,8 @@
 #include "PCH.h"
 #include "VulkanContext.h"
-#include "Core/Utils/Utils.h"
 #include "RenderObject/Shader/ShaderModule.h"
 #define GLM_FORCE_RADIANS
 #define GLM_FORCE_DEPTH_ZERO_TO_ONE
-#include <GLM/glm.hpp>
-#include <GLM/gtc/matrix_transform.hpp>
-#include <chrono>
-#include <map>
-#include <iostream>
-#include <fstream>
-#include <set>
-#include <array>
 #define STB_IMAGE_IMPLEMENTATION
 #include <stb_image.h>
 #define TINYOBJLOADER_IMPLEMENTATION
@@ -19,6 +10,7 @@
 
 
 #include <glm/gtx/quaternion.hpp>
+#include "VulkanContext.h"
 
 namespace srx
 {

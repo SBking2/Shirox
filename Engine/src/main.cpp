@@ -1,5 +1,5 @@
 ﻿#include "PCH.h"
-#include "Core/Application/Application.h"
+#include "Application/Application.h"
 int main()
 {
 	srx::Application* app = new srx::Application();
