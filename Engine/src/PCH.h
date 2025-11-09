@@ -13,6 +13,7 @@
 #include <map>
 #include <exception>
 #include <cstdint>
+#include <algorithm>
 
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>

@@ -38,6 +38,7 @@ namespace srx
 		//GLFW窗口初始化
 		glfwInit();
 		glfwWindowHint(GLFW_CLIENT_API, GLFW_NO_API);	//阻止自动创建OpenGL上下文
+		SetWidthAndHeight(width, height);
 		_window = glfwCreateWindow(width, height, title.c_str(), nullptr, nullptr);
 
 		glfwSetWindowUserPointer(_window, this);
@@ -48,7 +49,7 @@ namespace srx
 		glfwSetCursorPosCallback(_window, cursor_position_callback);
 	}
 
-	GLFWwindow* Window::GetWindow()
+	GLFWwindow* Window::GetWindow() const
 	{
 		return _window;
 	}
@@ -64,6 +65,11 @@ namespace srx
 		glfwSetInputMode(_window, GLFW_CURSOR, is_lock ? GLFW_CURSOR_DISABLED : GLFW_CURSOR_NORMAL);
 	}
 
+	void Window::OnResizeEvent(const WindowResizeEvent& e)
+	{
+		SetWidthAndHeight(e.width, e.height);
+	}
+
 	void Window::HandleEvent()
 	{
 		glfwPollEvents();
@@ -77,6 +83,8 @@ namespace srx
 	void Window::OnEvent(const Event& e)
 	{
 		_event_callback(e);
+		EventDispathcer dispatcher(e);
+		dispatcher.Dispatch<WindowResizeEvent>(std::bind(&Window::OnResizeEvent, this, std::placeholders::_1));
 	}
 
 	bool Window::IsShouldClose()

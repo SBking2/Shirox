@@ -12,8 +12,7 @@ namespace srx
 		void* pUserData
 	)
 	{
-		std::cerr << "validation layer : " << pCallbackData->pMessage << std::endl;
-		std::cerr << std::endl;
+		Log::LogError(pCallbackData->pMessage);
 		return VK_FALSE;
 	}
 
