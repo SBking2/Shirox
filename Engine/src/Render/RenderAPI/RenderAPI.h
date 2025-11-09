@@ -1,5 +1,5 @@
 #pragma once
-
+#include "Window/Window.h"
 namespace srx
 {
 	enum class RenderEngine
@@ -11,7 +11,7 @@ namespace srx
 	class RenderAPI
 	{
 	public:
-		static RenderAPI* Create(RenderEngine engine_type);
+		static Ref<RenderAPI> Create(RenderEngine engine_type);
 		virtual void Init(const Window* window) = 0;
 		virtual void Draw() = 0;
 		virtual void Destroy() = 0;

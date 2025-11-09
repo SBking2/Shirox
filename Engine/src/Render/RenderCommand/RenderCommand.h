@@ -9,6 +9,6 @@ namespace srx
 		static void Draw();
 		static void Destory();
 	private:
-		static RenderAPI* _render_api;
+		inline static Ref<RenderAPI> _render_api;
 	};
 }

@@ -4,8 +4,9 @@ namespace srx
 {
 	void VulkanAPI::Init(const Window* window)
 	{
-		_context = new VulkanContext(window);
-		_swapchain = new VulkanSwapchain();
+		_context = CreateRef<VulkanContext>();
+		_swapchain = CreateRef<VulkanSwapchain>();
+		_context->Init(window);
 		_swapchain->Init(_context);
 	}
 
@@ -17,7 +18,6 @@ namespace srx
 	void VulkanAPI::Destroy()
 	{
 		_swapchain->Destroy();
-		delete _swapchain;
-		delete _context;
+		_context->Clear();
 	}
 }

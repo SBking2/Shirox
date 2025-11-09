@@ -15,16 +15,6 @@ namespace srx
 		return VK_FALSE;
 	}
 
-	VulkanContext::VulkanContext(const Window* window)
-	{
-		Init(window);
-	}
-
-	VulkanContext::~VulkanContext()
-	{
-		Clear();
-	}
-
 	void VulkanContext::Init(const Window* window)
 	{
 		_window = window;

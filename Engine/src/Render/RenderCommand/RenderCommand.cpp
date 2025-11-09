@@ -3,8 +3,6 @@
 #include "Window/Window.h"
 namespace srx
 {
-	RenderAPI* RenderCommand::_render_api = nullptr;	//初始化静态成员变量
-
 	void RenderCommand::Init()
 	{
 		_render_api = RenderAPI::Create(RenderEngine::Vulkan);
@@ -19,6 +17,5 @@ namespace srx
 	void RenderCommand::Destory()
 	{
 		_render_api->Destroy();
-		delete _render_api;
 	}
 }

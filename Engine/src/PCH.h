@@ -14,6 +14,7 @@
 #include <exception>
 #include <cstdint>
 #include <algorithm>
+#include <utility>
 
 #include <GLM/glm.hpp>
 #include <GLM/gtc/matrix_transform.hpp>
@@ -27,3 +28,4 @@
 #include "Core/Event/Event.h"
 #include "Core/Event/EventDispatcher.h"
 #include "Core/Log/Log.h"
+#include "Core/Common/Common.h"

@@ -38,7 +38,7 @@ namespace srx
 			Log::LogError("failed to create swapchain KHR!");
 	}
 
-	void VulkanSwapchain::Init(const VulkanContext* context)
+	void VulkanSwapchain::Init(Ref<const VulkanContext> context)
 	{
 		_context = context;
 		ChooseSwapchainInfo();

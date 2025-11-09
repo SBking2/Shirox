@@ -15,14 +15,12 @@ namespace srx
 			std::vector<VkSurfaceFormatKHR> formats;	//显卡支持的format
 			std::vector<VkPresentModeKHR> present_modes;	//支持的present
 		};
-		VulkanContext(const Window* window);
-		~VulkanContext();
 		inline VkDevice GetDevice() const { return _device; }
 		inline VkSurfaceKHR GetSurface() const { return _surface; }
 		inline const Window* GetWindow() const { return _window; }
-	private:
 		void Init(const Window* window);
 		void Clear();
+	private:
 		void CreateInstance();
 		void CreateDebugCallback();
 		void CreateSurface(const Window* window);

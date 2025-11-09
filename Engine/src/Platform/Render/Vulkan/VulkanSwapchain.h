@@ -14,7 +14,7 @@ namespace srx
 			VkPresentModeKHR present_mode;
 			uint32_t img_count;
 		};
-		void Init(const VulkanContext* context);
+		void Init(Ref<const VulkanContext> context);
 		void Destroy();
 	private:
 		void ChooseSwapchainInfo();
@@ -22,7 +22,7 @@ namespace srx
 	public:
 		SwapchainInfo swapchain_info;
 	private:
-		const VulkanContext* _context;
+		Ref<const VulkanContext> _context;
 		VkSwapchainKHR _swapchain;
 	};
 }
