@@ -10,4 +10,5 @@ Build-Int
 *.filters
 *.xcodeproj/
 *.workspace/
+# drawio
 *.bkp
