@@ -31,4 +31,12 @@ namespace srx
 		static std::ofstream s_log_file;
 		static LogLevel s_level;
 	};
+
+#define SRX_LOG_INIT(x) Log::Init(x);
+#define SRX_LOG_TRACE(...) Log::LogTrace(__VA_ARGS__);
+#define SRX_LOG_DEBUG(...) Log::LogDebug(__VA_ARGS__);
+#define SRX_LOG_INFO(...) Log::LogInfo(__VA_ARGS__);
+#define SRX_LOG_WARN(...) Log::LogWarn(__VA_ARGS__);
+#define SRX_LOG_ERROR(...) Log::LogError(__VA_ARGS__);
+#define SRX_LOG_CRITICAL(...) Log::LogCritical(__VA_ARGS__);
 }

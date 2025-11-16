@@ -1,10 +1,9 @@
 #pragma once
-#include "VulkanContext.h"
-#define GLFW_INCLUED_VULKAN
+#include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
 namespace srx
 {
-	class VulkanSwapchain final
+	/*class VulkanSwapchain final
 	{
 	public:
 		struct SwapchainInfo
@@ -24,5 +23,17 @@ namespace srx
 	private:
 		Ref<const VulkanContext> _context;
 		VkSwapchainKHR _swapchain;
+	};*/
+
+	class VulkanSwapchain final
+	{
+	public:
+		VulkanSwapchain(GLFWwindow* window);
+		virtual ~VulkanSwapchain() = default;
+	private:
+		void InitSurface(GLFWwindow* window);
+	private:
+		VkSwapchainKHR _Swapchain;
+		VkSurfaceKHR _Surface;
 	};
 }

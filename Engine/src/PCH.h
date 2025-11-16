@@ -29,3 +29,4 @@
 #include "Core/Event/EventDispatcher.h"
 #include "Core/Log/Log.h"
 #include "Core/Common/Common.h"
+#include "Core/Assert.h"
