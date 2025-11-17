@@ -201,9 +201,13 @@ namespace srx
 		create_info.enabledLayerCount = static_cast<uint32_t>(required_layers.size());
 		create_info.ppEnabledLayerNames = required_layers.data();
 
-		VkResult result = vkCreateDevice(physical_device->GetPhysicalDevice(), &create_info, nullptr, &_Device);
+		VkResult result = vkCreateDevice(physical_device->GetVkPhysicalDevice(), &create_info, nullptr, &_Device);
 
 		SRX_ASSERT(result == VK_SUCCESS, "创建逻辑设备失败!");
+
+		vkGetDeviceQueue(_Device, queue_family_index.graphic, 0, &_GraphicQueue);
+		vkGetDeviceQueue(_Device, queue_family_index.compute, 0, &_ComputeQueue);
+		vkGetDeviceQueue(_Device, queue_family_index.transfer, 0, &_TransferQueue);
 	}
 
 	VulkanDevice::~VulkanDevice()
