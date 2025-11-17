@@ -52,6 +52,8 @@ namespace srx
 		void Init() override;
 		void Destroy() override;
 		VkInstance GetVkInstance() { return _Instance; }
+		inline Ref<VulkanPhysicalDevice> GetPhysicalDevice() { return _PhysicalDevice; }
+		inline Ref<VulkanDevice> GetDevice() { return _Device; }
 	private:
 		void CreateInstance();
 		void CreateDebugCallback();

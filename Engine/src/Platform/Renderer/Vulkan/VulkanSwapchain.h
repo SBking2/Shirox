@@ -30,10 +30,16 @@ namespace srx
 	public:
 		VulkanSwapchain(GLFWwindow* window);
 		virtual ~VulkanSwapchain() = default;
+		void Create(uint32_t width, uint32_t height);
 	private:
-		void InitSurface(GLFWwindow* window);
+		void FindQueueIndex(VkPhysicalDevice physical_device);
+		void FindColorForamatAndColorSpace(VkPhysicalDevice physical_device);	//在确定物理设备的时候就可以调用
 	private:
-		VkSwapchainKHR _Swapchain;
+		VkSwapchainKHR _Swapchain = nullptr;
 		VkSurfaceKHR _Surface;
+		uint32_t _GraphicQueueIndex;
+		uint32_t _PresentQueueIndex;
+		VkFormat _ColorFormat;
+		VkColorSpaceKHR _ColorSpace;
 	};
 }

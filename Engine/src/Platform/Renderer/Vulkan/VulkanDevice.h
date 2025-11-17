@@ -1,5 +1,5 @@
 #pragma once
-
+#include<vulkan/vulkan.h>
 namespace srx
 {
 	class VulkanPhysicalDevice final
@@ -15,7 +15,7 @@ namespace srx
 		virtual ~VulkanPhysicalDevice();
 		bool IsSupportedExtension(const std::string& extension_name);
 		bool IsSupportedLayer(const std::string& layer_name);
-		inline VkPhysicalDevice GetPhysicalDevice() { return _PhysicalDevice; }
+		inline VkPhysicalDevice GetVkPhysicalDevice() { return _PhysicalDevice; }
 		inline QueueFamilyIndices GetQueueFamilyIndices() { return _QueueFamilyIndices; }
 	private:
 		QueueFamilyIndices GetQueueFamilyIndices(const std::vector<VkQueueFamilyProperties>& queue_family, uint32_t require_queue);
@@ -33,6 +33,7 @@ namespace srx
 		VulkanDevice(Ref<VulkanPhysicalDevice> physical_device
 			, VkPhysicalDeviceFeatures enable_features);
 		virtual ~VulkanDevice();
+		inline VkDevice GetVkDevice() { return _Device; }
 		void Destroy();
 	private:
 		VkDevice _Device;

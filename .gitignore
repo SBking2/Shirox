@@ -1,14 +1,11 @@
-# 第三方库
 vendor
-# 生成的文件
 Build
 Build-Int
-# vs生成的文件
 .vs
 *.sln
 *.vcxproj*
 *.filters
+premake5.lua
 *.xcodeproj/
 *.workspace/
-# drawio
 *.bkp
