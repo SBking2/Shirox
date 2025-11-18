@@ -8,4 +8,3 @@ Build-Int
 premake5.lua
 *.xcodeproj/
 *.workspace/
-*.bkp
