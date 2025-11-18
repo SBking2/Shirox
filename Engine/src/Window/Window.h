@@ -1,4 +1,5 @@
 #pragma once
+#include "Platform/Renderer/Vulkan/VulkanSwapchain.h"
 #define GLFW_INCLUED_VULKAN
 #include <vulkan/vulkan.h>
 #include <GLFW/glfw3.h>
@@ -28,5 +29,6 @@ namespace srx
 		GLFWwindow* _window;
 		uint32_t width, height;
 		glm::vec2 _last_mouse_pos;
+		Ref<VulkanSwapchain> _Swapchain;
 	};
 }

@@ -142,8 +142,7 @@ namespace srx
 			}
 		}
 
-		SRX_ASSERT(indices.compute != -1 && indices.graphic != -1 && indices.transfer != -1
-			, "找不到适合的队列簇!");
+		SRX_ASSERT((indices.compute != -1 && indices.graphic != -1 && indices.transfer != -1), "找不到适合的队列簇!");
 
 		return indices;
 	}

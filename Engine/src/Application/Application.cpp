@@ -8,8 +8,6 @@ namespace srx
 
 	void Application::Init()
 	{
-		RendererContext::CreateContext();	//需要先创建RendereContext再创建Window
-
 		SRX_LOG_INIT("assets/log/log.log")
 		Log::SetLevel(LogLevel::Trace);
 		Window::GetInstance()->Init(800, 600, "vulkan_example");
@@ -32,8 +30,8 @@ namespace srx
 
 	void Application::Clear()
 	{
-		RendererContext::GetContext()->Destroy();
 		Window::GetInstance()->Clear();
+		RendererContext::GetContext()->Destroy();
 	}
 
 	void Application::OnEvent(const Event& e)

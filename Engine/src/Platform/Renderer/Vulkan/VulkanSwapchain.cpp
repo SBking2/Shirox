@@ -114,13 +114,14 @@ namespace srx
 	//		swapchain_info.img_count = _context->device_info.capabilities.maxImageCount;
 	//}
 
-	//初始化Surface，查找队列，图片格式和颜色空间
+	//初始化Surface，查找队列，图片格式和颜色空间	
 	VulkanSwapchain::VulkanSwapchain(GLFWwindow* window)
 	{
 		VulkanContext* context = (VulkanContext*)RendererContext::GetContext().get();
 
 		/////////////////////////////////////////////// 创建Surface
-		glfwCreateWindowSurface(context->GetVkInstance(), window, nullptr, &_Surface);
+		VkResult surface_result = glfwCreateWindowSurface(context->GetVkInstance(), window, nullptr, &_Surface);
+		SRX_ASSERT(surface_result == VK_SUCCESS, "创建Surface失败!");
 
 		FindQueueIndex(context->GetVkPhysicalDevice());
 		FindColorForamatAndColorSpace(context->GetVkPhysicalDevice());
@@ -162,7 +163,7 @@ namespace srx
 
 		//////////////////////////////////////// 获取preTransform
 		VkSurfaceTransformFlagsKHR pre_transform;
-		if (pre_transform & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)	//不需要选择
+		if (capabilities.supportedTransforms & VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR)	//不需要选择
 			pre_transform = VK_SURFACE_TRANSFORM_IDENTITY_BIT_KHR;
 		else
 			pre_transform = capabilities.currentTransform;
@@ -295,10 +296,10 @@ namespace srx
 
 		for (uint32_t i = 0; i < queue_count; i++)
 		{
-			if (_GraphicQueueIndex != UINT32_MAX && (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+			if (_GraphicQueueIndex == UINT32_MAX && (queue_properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
 				_GraphicQueueIndex = i;
 			
-			if (_PresentQueueIndex != UINT32_MAX && supported_present[i] == VK_TRUE)
+			if (_PresentQueueIndex == UINT32_MAX && supported_present[i] == VK_TRUE)
 				_PresentQueueIndex = i;
 
 			if (_GraphicQueueIndex != UINT32_MAX && _PresentQueueIndex != UINT32_MAX)

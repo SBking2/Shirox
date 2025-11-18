@@ -1,6 +1,6 @@
 #include "PCH.h"
 #include "Window.h"
-#include "Render/Vulkan/VulkanContext.h"
+#include "Renderer/RendererContext.h"
 namespace srx
 {
 	static void framebuffer_resize_callback(GLFWwindow* window, int width, int height)
@@ -47,6 +47,11 @@ namespace srx
 		glfwSetKeyCallback(_window, key_callback);
 		glfwSetMouseButtonCallback(_window, mouse_button_callback);
 		glfwSetCursorPosCallback(_window, cursor_position_callback);
+
+		RendererContext::CreateContext();	//需要先glfwInit(), 再创建RendereContext
+
+		_Swapchain = CreateRef<VulkanSwapchain>(_window);
+		_Swapchain->Create(width, height);
 	}
 
 	GLFWwindow* Window::GetWindow() const
@@ -56,6 +61,7 @@ namespace srx
 
 	void Window::Clear()
 	{
+		_Swapchain->Destory();
 		glfwDestroyWindow(_window);
 		glfwTerminate();
 	}

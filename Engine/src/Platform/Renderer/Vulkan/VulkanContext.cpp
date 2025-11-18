@@ -348,7 +348,8 @@ namespace srx
 		CreateInstance();
 		CreateDebugCallback();
 		_PhysicalDevice = CreateRef<VulkanPhysicalDevice>();
-		_Device = CreateRef<VulkanDevice>();
+		VkPhysicalDeviceFeatures features = {};
+		_Device = CreateRef<VulkanDevice>(_PhysicalDevice, features);
 	}
 
 	void VulkanContext::Destroy()
@@ -418,7 +419,7 @@ namespace srx
 		//寻找函数地址
 		auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(_Instance, "vkCreateDebugUtilsMessengerEXT");
 		bool result = func == nullptr || func(_Instance, &create_info, nullptr, &_DebugMessager) != VK_SUCCESS;
-		SRX_ASSERT(result, "创建Instance验证层失败!");
+		SRX_ASSERT(result == VK_SUCCESS, "创建Instance验证层失败!");
 	}
 
 //		if (device_info.formats.empty() || device_info.present_modes.empty())

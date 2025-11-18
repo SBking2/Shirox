@@ -5,7 +5,6 @@ namespace srx
 {
 	LogLevel Log::s_level = LogLevel::off;
 	std::ofstream Log::s_log_file;
-	bool Log::s_inited = false;
 
 	void Log::Init(const std::string& file_path)
 	{

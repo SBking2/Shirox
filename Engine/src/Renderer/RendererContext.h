@@ -18,7 +18,7 @@ namespace srx
 		virtual void Destroy() = 0;
 		static void CreateContext();
 		static RendererEngineType CurrentEngine() { return s_EngineType; }
-		inline static Ref<RendererContext> GetContext() { s_Context; };
+		inline static Ref<RendererContext> GetContext() { return s_Context; };
 	private:
 		inline static Ref<RendererContext> s_Context = nullptr;
 		inline static RendererEngineType s_EngineType = RendererEngineType::Vulkan;
