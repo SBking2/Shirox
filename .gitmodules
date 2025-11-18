@@ -1,0 +1,9 @@
+[submodule "Engine/vendor/glfw"]
+	path = Engine/vendor/glfw
+	url = git@github.com:SBking2/glfw.git
+[submodule "Engine/vendor/glm"]
+	path = Engine/vendor/glm
+	url = git@github.com:SBking2/glm.git
+[submodule "Engine/vendor/assimp"]
+	path = Engine/vendor/assimp
+	url = git@github.com:SBking2/assimp.git
