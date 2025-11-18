@@ -10,24 +10,24 @@ project "Engine"
     files { "**.cpp", "**.h", "**.hpp" }
 
     includedirs {
-        root_dir .. "/vendor/GLFW/include",
-        root_dir .. "/vendor/GLM",
-        root_dir .. "/vendor/STB",
-        root_dir .. "/vendor/TinyObjLoader",
-        root_dir .. "/vendor/Assimp/include",
-        "F:/vulkan/Include",
+        "vendor/glfw/include",
+        "vendor/glm",
+        "vendor/STB",
+        "vendor/TinyObjLoader",
+        "vendor/assimp/include",
+        os.getenv("VK_SDK_PATH") .. "/Include",
         "src"
     }
 
     libdirs{
-        root_dir .. "/vendor/GLFW/bin/Debug-windows-x86_64/GLFW",
-        root_dir .. "/vendor/Assimp",
-        "F:/vulkan/Lib"
+        "vendor/glfw/Build/%{cfg.buildcfg}",
+        "vendor/assimp/CMakeBuild/lib/Debug",
+        os.getenv("VK_SDK_PATH") .. "/Lib"
     }
 
     links{
         "vulkan-1",
-        "GLFW",
+        "glfw",
         "assimp-vc143-mtd"
     }
 
