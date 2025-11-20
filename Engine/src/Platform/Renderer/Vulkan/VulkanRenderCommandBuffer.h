@@ -6,6 +6,8 @@ namespace srx
 	class VulkanRenderCommandBuffer : public RenderCommandBuffer
 	{
 	public:
+		VulkanRenderCommandBuffer();
+		virtual ~VulkanRenderCommandBuffer();
 		void Begin() override;
 		void End() override;
 		void Submit() override;
