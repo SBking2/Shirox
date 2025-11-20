@@ -7,6 +7,7 @@ namespace srx
 	class RendererAPI
 	{
 	public:
+		virtual void Init() = 0;
 		virtual void BeginRenderPass(const Ref<RenderCommandBuffer>& render_command_buffer, const Ref<RenderPass>& render_pass) = 0;
 		virtual void RenderTriangle(const Ref<RenderCommandBuffer>& render_command_buffer, const Ref<RenderPass>& render_pass) = 0;
 		virtual void EndRenderPass(const Ref<RenderCommandBuffer>& render_command_buffer, const Ref<RenderPass>& render_pass) = 0;

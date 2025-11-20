@@ -8,6 +8,7 @@ namespace srx
 	public:
 		VulkanRenderCommandBuffer();
 		virtual ~VulkanRenderCommandBuffer();
+		inline VkCommandBuffer GetVkCommandBuffer() { return _CommandBuffer; }
 		void Begin() override;
 		void End() override;
 		void Submit() override;

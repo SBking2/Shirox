@@ -55,6 +55,7 @@ namespace srx
 		inline VkPhysicalDevice GetVkPhysicalDevice() { return _PhysicalDevice->GetVkPhysicalDevice(); }
 		inline VkDevice GetVkDevice() { return _Device->GetVkDevice(); }
 		inline Ref<VulkanDevice> GetDevice() { return _Device; }
+		inline Ref<VulkanPhysicalDevice> GetPhysicalDevice() { return _PhysicalDevice; }
 	private:
 		void CreateInstance();
 		void CreateDebugCallback();

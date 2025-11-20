@@ -6,6 +6,7 @@ namespace srx
 	void Renderer::Init()
 	{
 		s_RenderAPI = RendererAPI::Create();	//³õÊ¼»¯RendererAPI
+		s_RenderAPI->Init();
 	}
 
 	void Renderer::BeginRenderPass(const Ref<RenderCommandBuffer>& render_command_buffer, const Ref<RenderPass>& render_pass)
