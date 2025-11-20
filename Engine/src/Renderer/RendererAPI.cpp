@@ -1,7 +1,7 @@
 #include "PCH.h"
 #include "RendererAPI.h"
 #include "RendererContext.h"
-#include "Platform/Renderer/Vulkan/VulkanAPI.h"
+#include "Platform/Renderer/Vulkan/VulkanRenderer.h"
 namespace srx
 {
 	Ref<RendererAPI> RendererAPI::Create()
@@ -9,7 +9,7 @@ namespace srx
 		switch (RendererContext::CurrentEngine())
 		{
 		case RendererEngineType::Vulkan: 
-			return CreateRef<VulkanAPI>();
+			return CreateRef<VulkanRenderer>();
 			break;
 		case RendererEngineType::None:
 		default:

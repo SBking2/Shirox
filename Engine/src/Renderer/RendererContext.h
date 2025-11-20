@@ -19,6 +19,9 @@ namespace srx
 		static void CreateContext();
 		static RendererEngineType CurrentEngine() { return s_EngineType; }
 		inline static Ref<RendererContext> GetContext() { return s_Context; };
+
+		template <typename T>
+		inline static T* GetSpecificContext() { return (T*)s_Context.get(); }
 	private:
 		inline static Ref<RendererContext> s_Context = nullptr;
 		inline static RendererEngineType s_EngineType = RendererEngineType::Vulkan;

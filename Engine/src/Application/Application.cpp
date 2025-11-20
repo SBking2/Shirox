@@ -22,6 +22,11 @@ namespace srx
 		{
 			auto now = std::chrono::high_resolution_clock::now();
 			std::chrono::duration<float> delta = now - _last_time;
+
+			//更新Layer
+			for (const auto& layer : _Layers)
+				layer->OnUpdate(delta.count());
+
 			Window::GetInstance()->HandleEvent();
 			
 			_last_time = now;

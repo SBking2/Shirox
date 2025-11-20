@@ -34,7 +34,7 @@ namespace srx
 			, VkPhysicalDeviceFeatures enable_features);
 		virtual ~VulkanDevice();
 		inline VkDevice GetVkDevice() { return _Device; }
-		inline VkQueue GetGraphicQueu() { return _GraphicQueue; }
+		inline VkQueue GetGraphicQueue() { return _GraphicQueue; }
 		inline VkQueue GetComputeQueue() { return _ComputeQueue; }
 		inline VkQueue GetTransferQueue() { return _TransferQueue; }
 		void Destroy();

@@ -1,8 +1,5 @@
 #pragma once
-#define GLFW_INCLUED_VULKAN
-
-#include <vulkan/vulkan.h>
-#include <GLFW/glfw3.h>
+#include "Layer.h"
 namespace srx
 {
 	class Application
@@ -13,6 +10,7 @@ namespace srx
 		void Clear();
 	private:
 		void OnEvent(const Event& e);
+		std::vector<Ref<Layer>> _Layers;
 		std::chrono::high_resolution_clock::time_point _last_time;
 	};
 }
